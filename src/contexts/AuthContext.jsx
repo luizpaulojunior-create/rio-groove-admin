@@ -1,105 +1,89 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
-const AuthContext = createContext({})
+import { supabase } from '../lib/supabase';
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [loading, setLoading] = useState(true)
+const AuthContext = createContext({});
+
+export const AuthProvider = ({
+  children,
+}) => {
+  const [user, setUser] =
+    useState(null);
+
+  const [isAdmin, setIsAdmin] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
-    let mounted = true
-
-    const checkAdmin = async (userId) => {
-      try {
-        const { data, error } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle()
-
-        if (error) {
-          console.error('Erro ao verificar admin:', error.message)
-        }
-
-        if (mounted) {
-          setIsAdmin(!!data)
-        }
-      } catch (error) {
-        console.error(
-          'Erro ao verificar status de administrador:',
-          error.message
-        )
-
-        if (mounted) {
-          setIsAdmin(false)
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    const initializeAuth = async () => {
+    const loadUser = async () => {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession()
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
 
-        if (session?.user) {
-          if (mounted) {
-            setUser(session.user)
-          }
-
-          await checkAdmin(session.user.id)
-        } else {
-          if (mounted) {
-            setUser(null)
-            setIsAdmin(false)
-            setLoading(false)
-          }
+        if (error) {
+          console.error(
+            'Erro auth:',
+            error
+          );
         }
+
+        if (!user) {
+          setUser(null);
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        }
+
+        setUser(user);
+
+        const {
+          data: adminData,
+          error: adminError,
+        } = await supabase
+          .from('admins')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (adminError) {
+          console.error(
+            'Erro admin:',
+            adminError
+          );
+        }
+
+        setIsAdmin(!!adminData);
       } catch (err) {
-        console.error('Erro ao inicializar auth:', err.message)
+        console.error(
+          'Erro geral auth:',
+          err
+        );
 
-        if (mounted) {
-          setLoading(false)
-        }
+        setUser(null);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    initializeAuth()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        if (mounted) {
-          setLoading(true)
-          setUser(session.user)
-        }
-
-        await checkAdmin(session.user.id)
-      } else {
-        if (mounted) {
-          setUser(null)
-          setIsAdmin(false)
-          setLoading(false)
-        }
-      }
-    })
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
+    loadUser();
+  }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+    await supabase.auth.signOut();
+
+    setUser(null);
+    setIsAdmin(false);
+  };
 
   return (
     <AuthContext.Provider
@@ -112,9 +96,8 @@ export const AuthProvider = ({ children }) => {
     >
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-export const useAuth = () => {
-  return useContext(AuthContext)
-}
+export const useAuth = () =>
+  useContext(AuthContext);
