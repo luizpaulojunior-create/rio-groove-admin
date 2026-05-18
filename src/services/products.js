@@ -1,66 +1,59 @@
-import { supabase } from '../lib/supabase'
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://rio-groove-backend.onrender.com/api');
 
 export const productsService = {
   async getProducts() {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (error) throw error
-    return data
+    const res = await fetch(`${API_URL}/products`).catch(() => {
+      throw new Error('Falha de conexão com o servidor. O backend está rodando localmente?');
+    });
+    if (!res.ok) throw new Error('Falha ao buscar produtos');
+    return res.json();
   },
 
   async getProduct(id) {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single()
-    
-    if (error) throw error
-    return data
+    const res = await fetch(`${API_URL}/products/${id}`).catch(() => {
+      throw new Error('Falha de conexão com o servidor.');
+    });
+    if (!res.ok) throw new Error('Falha ao buscar produto');
+    return res.json();
   },
 
-  async createProduct(product) {
-    // Gerar slug a partir do nome se não existir
-    if (!product.slug && product.name) {
-      product.slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-    }
-
-    const { data, error } = await supabase
-      .from('products')
-      .insert([product])
-      .select()
-      .single()
+  async createProduct(formData) {
+    const res = await fetch(`${API_URL}/products`, {
+      method: 'POST',
+      body: formData
+    }).catch(() => {
+      throw new Error('Falha de conexão. Verifique se o backend está rodando na porta 3000.');
+    });
     
-    if (error) throw error
-    return data
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao criar produto no servidor');
+    }
+    return res.json();
   },
 
-  async updateProduct(id, updates) {
-    if (updates.name && !updates.slug) {
-      updates.slug = updates.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-    }
-
-    const { data, error } = await supabase
-      .from('products')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
+  async updateProduct(id, formData) {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      body: formData
+    }).catch(() => {
+      throw new Error('Falha de conexão. Verifique se o backend está rodando na porta 3000.');
+    });
     
-    if (error) throw error
-    return data
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao atualizar produto no servidor');
+    }
+    return res.json();
   },
 
   async deleteProduct(id) {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id)
-    
-    if (error) throw error
-    return true
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'DELETE'
+    }).catch(() => {
+      throw new Error('Falha de conexão com o servidor.');
+    });
+    if (!res.ok) throw new Error('Falha ao deletar produto no servidor');
+    return true;
   }
 }

@@ -19,7 +19,7 @@ export default function ProductList() {
       const data = await productsService.getProducts()
       setProducts(data || [])
     } catch (err) {
-      setError('Erro ao carregar produtos. Verifique sua conexão com o banco de dados.')
+      setError(err.message || 'Erro ao carregar produtos.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -63,30 +63,35 @@ export default function ProductList() {
     try {
       setFormLoading(true)
       
-      let finalData = { ...formData }
+      const payload = new FormData();
+      
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && formData[key] !== undefined) {
+          payload.append(key, formData[key]);
+        }
+      });
       
       if (imageFile) {
-        const uploadResult = await storageService.uploadProductImage(imageFile)
-        if (uploadResult) {
-          finalData.image_url = uploadResult.url
-          
-          if (editingProduct && editingProduct.image_url && editingProduct.image_url !== uploadResult.url) {
-            await storageService.deleteProductImage(editingProduct.image_url)
-          }
+        payload.append('image', imageFile);
+        
+        if (editingProduct && editingProduct.image_url) {
+          await storageService.deleteProductImage(editingProduct.image_url);
         }
       } else if (editingProduct && editingProduct.image_url && !formData.image_url) {
-        await storageService.deleteProductImage(editingProduct.image_url)
+        payload.append('image_url', '');
+        await storageService.deleteProductImage(editingProduct.image_url);
       }
 
       if (editingProduct) {
-        await productsService.updateProduct(editingProduct.id, finalData)
+        await productsService.updateProduct(editingProduct.id, payload)
       } else {
-        await productsService.createProduct(finalData)
+        await productsService.createProduct(payload)
       }
+      
       await fetchProducts()
       setIsFormOpen(false)
     } catch (err) {
-      alert('Erro ao salvar produto. Verifique os dados e tente novamente.')
+      alert(`Erro ao salvar produto: ${err.message}`)
       console.error(err)
     } finally {
       setFormLoading(false)

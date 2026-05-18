@@ -59,7 +59,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, loading }
   const labelStyle = { display: 'block', marginBottom: '0.375rem', fontSize: '0.875rem', fontWeight: '500', color: '#334155' }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <form onSubmit={handleSubmit} encType="multipart/form-data" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div style={{ display: 'flex', gap: '1rem' }}>
         <div style={{ flex: 2 }}>
           <label style={labelStyle}>Nome do Produto</label>
