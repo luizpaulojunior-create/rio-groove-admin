@@ -1,21 +1,53 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ff2b06;
+  --color-primary-hover: #ff3b1a;
+  --color-background: #050505;
+  --color-surface: #0b0b0b;
+  --color-text: #ffffff;
+  --color-text-muted: #9ca3af;
+  --color-border: rgba(255, 255, 255, 0.05);
+  
+  --font-heading: 'Bebas Neue', Anton, sans-serif;
+  --font-sans: 'Inter', sans-serif;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f1f5f9;
-  color: #0f172a;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-[var(--color-background)] text-[var(--color-text)] font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-wider;
+  }
 }
 
-button {
-  font-family: inherit;
-}
+@layer utilities {
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+  }
+  
+  .glass-panel-hover {
+    @apply hover:bg-[rgba(255,255,255,0.04)] transition-colors duration-300;
+  }
 
-input {
-  font-family: inherit;
+  .glow-red {
+    box-shadow: 0 0 40px rgba(255, 43, 6, 0.08);
+  }
+
+  .glow-red-hover:hover {
+    box-shadow: 0 0 40px rgba(255, 43, 6, 0.15);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
 }

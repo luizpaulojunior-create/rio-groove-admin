@@ -10,19 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
     "@supabase/supabase-js": "^2.105.4",
     "axios": "^1.16.1",
-    "date-fns": "^4.2.1",
     "framer-motion": "^12.39.0",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.76.0",
-    "react-router-dom": "^7.15.1",
-    "react-spinners": "^0.17.0",
-    "react-toastify": "^11.1.0",
-    "yup": "^1.7.1"
+    "react-router-dom": "^7.15.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
