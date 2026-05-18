@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let mounted = true;
+    let mounted = true
 
     const checkAdmin = async (userId) => {
       try {
@@ -17,29 +17,42 @@ export const AuthProvider = ({ children }) => {
           .from('admins')
           .select('*')
           .eq('id', userId)
-          .single()
-        
+          .maybeSingle()
+
+        if (error) {
+          console.error('Erro ao verificar admin:', error.message)
+        }
+
         if (mounted) {
-          if (data) {
-            setIsAdmin(true)
-          } else {
-            setIsAdmin(false)
-          }
+          setIsAdmin(!!data)
         }
       } catch (error) {
-        console.error('Erro ao verificar status de administrador:', error.message)
-        if (mounted) setIsAdmin(false)
+        console.error(
+          'Erro ao verificar status de administrador:',
+          error.message
+        )
+
+        if (mounted) {
+          setIsAdmin(false)
+        }
       } finally {
-        if (mounted) setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
         if (session?.user) {
-          if (mounted) setUser(session.user)
+          if (mounted) {
+            setUser(session.user)
+          }
+
           await checkAdmin(session.user.id)
         } else {
           if (mounted) {
@@ -50,18 +63,24 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.error('Erro ao inicializar auth:', err.message)
-        if (mounted) setLoading(false)
+
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     initializeAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         if (mounted) {
           setLoading(true)
           setUser(session.user)
         }
+
         await checkAdmin(session.user.id)
       } else {
         if (mounted) {
@@ -73,15 +92,24 @@ export const AuthProvider = ({ children }) => {
     })
 
     return () => {
-      mounted = false;
+      mounted = false
       subscription.unsubscribe()
     }
   }, [])
 
-  const signOut = () => supabase.auth.signOut()
+  const signOut = async () => {
+    await supabase.auth.signOut()
+  }
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAdmin,
+        loading,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
