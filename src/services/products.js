@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://rio-groove-backend.onrender.com/api');
+const API_URL = import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api';
 
 export const productsService = {
   async getProducts() {
