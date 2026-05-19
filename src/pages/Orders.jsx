@@ -389,7 +389,7 @@ if (
       render: (row) => <span className="font-medium text-white">R$ {Number(row.total || 0).toFixed(2)}</span>
     },
     {
-      header: 'A├º├Áes',
+      header: 'Ações',
       accessor: 'actions',
       render: (row) => (
         <button 
@@ -550,11 +550,11 @@ if (
 
             <div className="space-y-6">
               
-              {/* A├º├Áes R├ípidas */}
+              {/* Ações Rápidas */}
               <div className="glass-panel p-6 border-[var(--color-primary)] border-opacity-30">
                 <h3 className="text-lg font-heading tracking-wide mb-4 border-b border-[var(--color-border)] pb-2 text-white flex items-center gap-2">
                   <Settings size={20} className="text-[var(--color-primary)]"/>
-                  A├º├Áes Operacionais
+                  Ações Operacionais
                 </h3>
                 <div className="space-y-3">
                   {getNormalizedStatus(selectedOrder.status) !== 'cancelado' && getNextActions()}
