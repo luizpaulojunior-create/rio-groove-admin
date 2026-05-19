@@ -25,7 +25,12 @@ export default function DataTable({
     ? data.filter((item) => {
         if (!searchTerm) return true;
 
-        return Object.values(item || {}).some(
+        return Object.values(
+  typeof item === 'object' &&
+  item !== null
+    ? item
+    : {}
+).some(
           (val) => {
             if (
               val === null ||
@@ -94,7 +99,10 @@ export default function DataTable({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[var(--color-border)] bg-[rgba(255,255,255,0.02)]">
-                {columns.map(
+                {(Array.isArray(columns)
+  ? columns
+  : []
+).map(
                   (col, index) => (
                     <th
                       key={index}
@@ -118,7 +126,10 @@ export default function DataTable({
             <tbody className="divide-y divide-[var(--color-border)]">
               {filteredData.length >
               0 ? (
-                filteredData.map(
+                (Array.isArray(filteredData)
+  ? filteredData
+  : []
+).map(
                   (
                     row,
                     rowIndex
@@ -143,7 +154,10 @@ export default function DataTable({
                       }
                       className="hover:bg-[rgba(255,255,255,0.02)] transition-colors group"
                     >
-                      {columns.map(
+                      {(Array.isArray(columns)
+  ? columns
+  : []
+).map(
                         (
                           col,
                           colIndex
