@@ -15,13 +15,13 @@ const TIMELINE_STEPS = [
   { id: 'aguardando_pagamento', label: 'Aguardando Pagamento' },
   { id: 'pagamento_aprovado', label: 'Pagamento Aprovado' },
   { id: 'estoque_reservado', label: 'Estoque Reservado' },
-  { id: 'aguardando_producao', label: 'Aguardando Produ├º├úo' },
-  { id: 'em_producao', label: 'Em Produ├º├úo' },
-  { id: 'producao_concluida', label: 'Produ├º├úo Conclu├¡da' },
+  { id: 'aguardando_producao', label: 'Aguardando Produção' },
+  { id: 'em_producao', label: 'Em Produção' },
+  { id: 'producao_concluida', label: 'Produção Concluída' },
   { id: 'preparando_envio', label: 'Preparando Envio' },
   { id: 'etiqueta_gerada', label: 'Etiqueta Gerada' },
   { id: 'postado', label: 'Postado' },
-  { id: 'em_transito', label: 'Em Tr├ónsito' },
+  { id: 'em_transito', label: 'Em Trânsito' },
   { id: 'saiu_para_entrega', label: 'Saiu para Entrega' },
   { id: 'entregue', label: 'Entregue' }
 ];
@@ -125,11 +125,11 @@ if (
       case 'estoque_reservado':
         return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-teal-500/10 text-teal-500 border-teal-500/20 flex items-center gap-1 w-max"><Package size={12}/> Estoque Reservado</span>;
       case 'aguardando_producao':
-        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-500 border-orange-500/20 flex items-center gap-1 w-max"><Clock size={12}/> Aguardando Produ├º├úo</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-500 border-orange-500/20 flex items-center gap-1 w-max"><Clock size={12}/> Aguardando Produção</span>;
       case 'em_producao':
-        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-500 border-orange-500/20 flex items-center gap-1 w-max"><Loader2 size={12} className="animate-spin"/> Em Produ├º├úo</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-500 border-orange-500/20 flex items-center gap-1 w-max"><Loader2 size={12} className="animate-spin"/> Em Produção</span>;
       case 'producao_concluida':
-        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-lime-500/10 text-lime-500 border-lime-500/20 flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Produ├º├úo Conclu├¡da</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-lime-500/10 text-lime-500 border-lime-500/20 flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Produção Concluída</span>;
       case 'preparando_envio':
         return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-500 border-blue-500/20 flex items-center gap-1 w-max"><Package size={12}/> Preparando Envio</span>;
       case 'etiqueta_gerada':
@@ -137,7 +137,7 @@ if (
       case 'postado':
       case 'em_transito':
       case 'saiu_para_entrega':
-        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-purple-500/10 text-purple-500 border-purple-500/20 flex items-center gap-1 w-max"><Truck size={12}/> {TIMELINE_STEPS.find(s => s.id === norm)?.label || 'Em Tr├ónsito'}</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-purple-500/10 text-purple-500 border-purple-500/20 flex items-center gap-1 w-max"><Truck size={12}/> {TIMELINE_STEPS.find(s => s.id === norm)?.label || 'Em Trânsito'}</span>;
       case 'entregue':
         return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-green-500/10 text-green-500 border-green-500/20 flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Entregue</span>;
       case 'cancelado':
@@ -159,7 +159,7 @@ if (
       const loadingToast = toast.loading('Atualizando status...', { toastId: 'update-status' });
       await ordersService.updateOrderStatus(selectedOrder.id, newStatus);
       
-      // Se for atualiza├º├úo para estoque reservado, faz a baixa do estoque
+      // Se for atualização para estoque reservado, faz a baixa do estoque
       if (newStatus === 'estoque_reservado') {
         toast.update(loadingToast, { render: 'Reservando estoque...', type: 'info', isLoading: true });
         const stockItems = await stockService.getStock();
@@ -195,16 +195,16 @@ if (
 
   const handleCancelOrder = async () => {
     if (isProcessing) return;
-    if (!window.confirm('Deseja realmente cancelar este pedido? O estoque ser├í devolvido caso j├í tenha sido baixado.')) {
+    if (!window.confirm('Deseja realmente cancelar este pedido? O estoque será devolvido caso já tenha sido baixado.')) {
       return;
     }
 
     try {
       setIsProcessing(true);
-      const loadingToast = toast.loading('Cancelando pedido e processando devolu├º├Áes...', { toastId: 'cancel-order' });
+      const loadingToast = toast.loading('Cancelando pedido e processando devoluções...', { toastId: 'cancel-order' });
       const normStatus = getNormalizedStatus(selectedOrder.status);
       
-      // Devolver estoque se j├í foi deduzido
+      // Devolver estoque se já foi deduzido
       if (STOCK_DEDUCTED_STATUSES.includes(normStatus)) {
         const stockItems = await stockService.getStock();
         const itemsToProcess = selectedOrder.items || [];
@@ -216,7 +216,7 @@ if (
           );
           if (stockItem) {
             try {
-              await stockService.adjustStock(stockItem.id, item.quantity, `Devolu├º├úo Cancelamento #${selectedOrder.id}`);
+              await stockService.adjustStock(stockItem.id, item.quantity, `Devolução Cancelamento #${selectedOrder.id}`);
             } catch (stockError) {
                console.error(`Erro ao devolver estoque para ${item.product?.name}:`, stockError);
                toast.error(`Falha ao devolver estoque para ${item.product?.name || 'item'}`);
@@ -245,7 +245,7 @@ if (
       const loadingToast = toast.loading('Gerando etiqueta...', { toastId: 'generate-label' });
       await shippingService.generateLabel(selectedOrder.id);
       await ordersService.updateOrderStatus(selectedOrder.id, 'etiqueta_gerada');
-      toast.update(loadingToast, { render: 'Etiqueta gerada com sucesso! Voc├¬ j├í pode imprimi-la.', type: 'success', isLoading: false, autoClose: 4000 });
+      toast.update(loadingToast, { render: 'Etiqueta gerada com sucesso! Você já pode imprimi-la.', type: 'success', isLoading: false, autoClose: 4000 });
       fetchOrders();
       setSelectedOrder(prev => ({ ...prev, status: 'etiqueta_gerada' }));
     } catch (error) {
@@ -271,7 +271,7 @@ if (
     } catch (error) {
       console.error('Erro ao cancelar etiqueta:', error);
       toast.dismiss('cancel-label');
-      toast.error('Erro ao cancelar etiqueta. Verifique se ela j├í foi postada ou cancelada.');
+      toast.error('Erro ao cancelar etiqueta. Verifique se ela já foi postada ou cancelada.');
     } finally {
       setIsProcessing(false);
     }
@@ -287,7 +287,7 @@ if (
         toast.update(loadingToast, { render: 'Abrindo etiqueta...', type: 'success', isLoading: false, autoClose: 2000 });
         window.open(data.url, '_blank');
       } else {
-        toast.update(loadingToast, { render: 'Etiqueta n├úo encontrada ou ainda n├úo liberada para impress├úo.', type: 'error', isLoading: false, autoClose: 4000 });
+        toast.update(loadingToast, { render: 'Etiqueta não encontrada ou ainda não liberada para impressão.', type: 'error', isLoading: false, autoClose: 4000 });
       }
     } catch (error) {
       console.error('Erro ao imprimir etiqueta:', error);
@@ -300,7 +300,7 @@ if (
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copiado para a ├írea de transfer├¬ncia!');
+    toast.success('Copiado para a área de transferência!');
   };
 
   const getNextActions = () => {
@@ -318,15 +318,15 @@ if (
     }
 
     if (norm === 'estoque_reservado') {
-      actions.push(<button key="aprod" onClick={() => handleUpdateStatus('aguardando_producao')} disabled={isProcessing} className="w-full py-2 bg-orange-600 text-white rounded-xl text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><ArrowRight size={16} />Enviar para Produ├º├úo</button>);
+      actions.push(<button key="aprod" onClick={() => handleUpdateStatus('aguardando_producao')} disabled={isProcessing} className="w-full py-2 bg-orange-600 text-white rounded-xl text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><ArrowRight size={16} />Enviar para Produção</button>);
     }
 
     if (norm === 'aguardando_producao') {
-      actions.push(<button key="eprod" onClick={() => handleUpdateStatus('em_producao')} disabled={isProcessing} className="w-full py-2 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><Loader2 size={16} />Iniciar Produ├º├úo</button>);
+      actions.push(<button key="eprod" onClick={() => handleUpdateStatus('em_producao')} disabled={isProcessing} className="w-full py-2 bg-orange-500 text-white rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><Loader2 size={16} />Iniciar Produção</button>);
     }
 
     if (norm === 'em_producao') {
-      actions.push(<button key="cprod" onClick={() => handleUpdateStatus('producao_concluida')} disabled={isProcessing} className="w-full py-2 bg-lime-600 text-white rounded-xl text-sm font-medium hover:bg-lime-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><CheckCircle2 size={16} />Concluir Produ├º├úo</button>);
+      actions.push(<button key="cprod" onClick={() => handleUpdateStatus('producao_concluida')} disabled={isProcessing} className="w-full py-2 bg-lime-600 text-white rounded-xl text-sm font-medium hover:bg-lime-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><CheckCircle2 size={16} />Concluir Produção</button>);
     }
 
     if (norm === 'producao_concluida') {
@@ -343,7 +343,7 @@ if (
     }
 
     if (norm === 'postado') {
-      actions.push(<button key="et" onClick={() => handleUpdateStatus('em_transito')} disabled={isProcessing} className="w-full py-2 bg-purple-500 text-white rounded-xl text-sm font-medium hover:bg-purple-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><Truck size={16} />Marcar Em Tr├ónsito</button>);
+      actions.push(<button key="et" onClick={() => handleUpdateStatus('em_transito')} disabled={isProcessing} className="w-full py-2 bg-purple-500 text-white rounded-xl text-sm font-medium hover:bg-purple-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"><Truck size={16} />Marcar Em Trânsito</button>);
     }
 
     if (norm === 'em_transito') {
@@ -430,8 +430,8 @@ if (
           >
             <option value="all">Todo o Periodo</option>
             <option value="today">Hoje</option>
-            <option value="week">├Ültimos 7 dias</option>
-            <option value="month">├Ültimos 30 dias</option>
+            <option value="week">Últimos 7 dias</option>
+            <option value="month">Últimos 30 dias</option>
           </select>
         </div>
       </div>
@@ -493,11 +493,11 @@ if (
                 </div>
               </div>
 
-              {/* Produtos e Produ├º├úo */}
+              {/* Produtos e Produção */}
               <div className="glass-panel p-6">
                 <h3 className="text-lg font-heading tracking-wide mb-4 border-b border-[var(--color-border)] pb-2 text-white flex items-center gap-2">
                   <Package size={20} className="text-[var(--color-primary)]"/>
-                  Itens & Produ├º├úo
+                  Itens & Produção
                 </h3>
                 <div className="space-y-4">
                   {(selectedOrder.items || []).map((item, idx) => (
@@ -570,7 +570,7 @@ if (
                       }}
                       className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white rounded-xl text-sm px-4 py-2 focus:outline-none focus:border-[var(--color-primary)] disabled:opacity-50"
                     >
-                      <option value="">For├ºar Mudan├ºa de Status...</option>
+                      <option value="">Forçar Mudança de Status...</option>
                       {TIMELINE_STEPS.map(step => (
                         <option key={step.id} value={step.id}>{step.label}</option>
                       ))}
@@ -589,29 +589,29 @@ if (
                 </div>
               </div>
 
-              {/* Log├¡stica */}
+              {/* Logística */}
               <div className="glass-panel p-6">
                 <h3 className="text-lg font-heading tracking-wide mb-4 border-b border-[var(--color-border)] pb-2 text-white flex items-center gap-2">
                   <Truck size={20} className="text-[var(--color-primary)]"/>
-                  Log├¡stica
+                  Logística
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div>
-                    <span className="text-[var(--color-text-muted)] text-xs uppercase block">Endere├ºo de Entrega</span>
+                    <span className="text-[var(--color-text-muted)] text-xs uppercase block">Endereço de Entrega</span>
                     <p className="text-white mt-1">
-                      {selectedOrder.shippingInfo?.address || selectedOrder.address || 'N├úo informado'}<br/>
+                      {selectedOrder.shippingInfo?.address || selectedOrder.address || 'Não informado'}<br/>
                       {selectedOrder.shippingInfo?.city || selectedOrder.city} - {selectedOrder.shippingInfo?.state || selectedOrder.state}<br/>
                       CEP: {selectedOrder.shippingInfo?.zipCode || selectedOrder.zipCode}
                     </p>
                   </div>
                   <div className="pt-2 border-t border-[var(--color-border)]">
-                    <span className="text-[var(--color-text-muted)] text-xs uppercase block">M├®todo de Envio</span>
+                    <span className="text-[var(--color-text-muted)] text-xs uppercase block">Método de Envio</span>
                     <p className="text-white mt-1 capitalize">{selectedOrder.shippingInfo?.method || selectedOrder.shippingMethod || 'Correios/Jadlog'}</p>
                   </div>
                   {selectedOrder.trackingCode && (
                     <div className="pt-2 border-t border-[var(--color-border)] flex justify-between items-center">
                       <div>
-                        <span className="text-[var(--color-text-muted)] text-xs uppercase block">C├│digo de Rastreio</span>
+                        <span className="text-[var(--color-text-muted)] text-xs uppercase block">Código de Rastreio</span>
                         <p className="text-white mt-1 font-medium">{selectedOrder.trackingCode}</p>
                       </div>
                       <button onClick={() => copyToClipboard(selectedOrder.trackingCode)} className="p-2 bg-[var(--color-surface)] rounded-lg hover:text-[var(--color-primary)] transition-colors">
@@ -642,7 +642,7 @@ if (
               <div className="glass-panel p-6">
                 <h3 className="text-lg font-heading tracking-wide mb-4 border-b border-[var(--color-border)] pb-2 text-white flex items-center gap-2">
                   <FileText size={20} className="text-[var(--color-primary)]"/>
-                  Hist├│rico & Logs
+                  Histórico & Logs
                 </h3>
                 <div className="space-y-3">
                   {(selectedOrder.logs || []).map((log, idx) => (

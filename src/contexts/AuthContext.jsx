@@ -21,61 +21,126 @@ export const AuthProvider = ({
   const [loading, setLoading] =
     useState(true);
 
+  const checkAdmin = async (
+    currentUser
+  ) => {
+    try {
+      if (!currentUser) {
+        setUser(null);
+        setIsAdmin(false);
+        return;
+      }
+
+      setUser(currentUser);
+
+      const timeoutPromise =
+        new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Timeout admin check'
+                )
+              ),
+            5000
+          )
+        );
+
+      const adminPromise =
+        supabase
+          .from('admins')
+          .select('id')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      const result =
+        await Promise.race([
+          adminPromise,
+          timeoutPromise,
+        ]);
+
+      const {
+        data: adminData,
+        error: adminError,
+      } = result;
+
+      if (adminError) {
+        console.error(
+          'Erro admin:',
+          adminError
+        );
+      }
+
+      setIsAdmin(!!adminData);
+    } catch (err) {
+      console.error(
+        'Erro checkAdmin:',
+        err
+      );
+
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadUser = async () => {
+    const loadSession = async () => {
       try {
+        setLoading(true);
+
         const {
-          data: { user },
+          data: { session },
           error,
-        } = await supabase.auth.getUser();
+        } =
+          await supabase.auth.getSession();
 
         if (error) {
           console.error(
-            'Erro auth:',
+            'Erro sessão:',
             error
           );
         }
 
-        if (!user) {
-          setUser(null);
-          setIsAdmin(false);
-          setLoading(false);
-          return;
-        }
-
-        setUser(user);
-
-        const {
-          data: adminData,
-          error: adminError,
-        } = await supabase
-          .from('admins')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (adminError) {
-          console.error(
-            'Erro admin:',
-            adminError
-          );
-        }
-
-        setIsAdmin(!!adminData);
+        await checkAdmin(
+          session?.user || null
+        );
       } catch (err) {
         console.error(
-          'Erro geral auth:',
+          'Erro loadSession:',
           err
         );
 
         setUser(null);
         setIsAdmin(false);
-      } finally {
         setLoading(false);
       }
     };
 
-    loadUser();
+    loadSession();
+
+    const {
+      data: authListener,
+    } =
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (session?.user) {
+            setUser(session.user);
+
+            // mantém admin validado
+            setIsAdmin(true);
+          } else {
+            setUser(null);
+            setIsAdmin(false);
+          }
+
+          setLoading(false);
+        }
+      );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
