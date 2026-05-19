@@ -428,7 +428,7 @@ if (
             onChange={(e) => setDateFilter(e.target.value)}
             className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors appearance-none min-w-[140px]"
           >
-            <option value="all">Todo o Per├¡odo</option>
+            <option value="all">Todo o Periodo</option>
             <option value="today">Hoje</option>
             <option value="week">├Ültimos 7 dias</option>
             <option value="month">├Ültimos 30 dias</option>
