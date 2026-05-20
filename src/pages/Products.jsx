@@ -3,7 +3,6 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
 import { productsService } from '../services/products';
-import { storageService } from '../services/storage';
 import { toast } from 'react-toastify';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
@@ -66,32 +65,28 @@ export default function Products() {
       setIsSubmitting(true);
       const loadingToast = toast.loading(editingProduct ? 'Atualizando estampa...' : 'Criando estampa...');
       
-      let processedImages = [];
-      if (formData.images && formData.images.length > 0) {
-        for (let img of formData.images) {
-          if (img.file) {
-            const uploaded = await storageService.uploadProductImage(img.file);
-            processedImages.push({
-              url: uploaded.url,
-              path: uploaded.path,
-              isMain: img.isMain
-            });
-          } else {
-            processedImages.push({
-              url: img.url,
-              path: img.path,
-              isMain: img.isMain
-            });
-          }
+      const payload = new FormData();
+      
+      Object.keys(formData).forEach(key => {
+        if (key !== 'images') {
+          payload.append(key, formData[key] === null ? '' : formData[key]);
         }
+      });
+
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach(img => {
+          if (img.file) {
+            payload.append('images', img.file);
+          } else if (img.url) {
+            payload.append('existing_images', JSON.stringify(img));
+          }
+        });
       }
 
-      const dataToSave = { ...formData, images: processedImages };
-
       if (editingProduct) {
-        await productsService.updateProduct(editingProduct.id, dataToSave);
+        await productsService.updateProduct(editingProduct.id, payload);
       } else {
-        await productsService.createProduct(dataToSave);
+        await productsService.createProduct(payload);
       }
       
       toast.update(loadingToast, { render: editingProduct ? 'Estampa atualizada!' : 'Estampa criada!', type: 'success', isLoading: false, autoClose: 3000 });

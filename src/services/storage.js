@@ -1,32 +1,6 @@
 import { supabase } from '../lib/supabase'
 
 export const storageService = {
-  async uploadProductImage(file) {
-    if (!file) return null
-
-    // Create a unique file name
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
-    const filePath = `${fileName}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, file)
-
-    if (uploadError) {
-      throw uploadError
-    }
-
-    const { data } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath)
-
-    return {
-      url: data.publicUrl,
-      path: filePath
-    }
-  },
-
   async deleteProductImage(pathOrUrl) {
     if (!pathOrUrl) return
 

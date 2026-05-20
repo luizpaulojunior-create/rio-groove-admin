@@ -1,27 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import UploadArea from './UploadArea';
+import { collectionsService } from '../services/collections';
 
 export default function ProductForm({ initialData, onSubmit, onCancel, isLoading }) {
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
     defaultValues: initialData || {
       name: '',
       slug: '',
-      shortDescription: '',
       description: '',
-      collection: '',
+      collection_id: '',
       category: '',
-      tags: '',
-      price: '',
-      promotionalPrice: '',
-      costPrice: '',
-      metaTitle: '',
-      metaDescription: '',
-      keywords: ''
+      price: ''
     }
   });
 
   const [images, setImages] = useState(initialData?.images || []);
+  const [collections, setCollections] = useState([]);
+
+  useEffect(() => {
+    collectionsService.getCollections().then(data => {
+      setCollections(Array.isArray(data) ? data : (data.collections || []));
+    }).catch(console.error);
+  }, []);
 
   const nameValue = watch('name');
 
@@ -106,11 +107,15 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção</label>
-              <input
-                {...register('collection')}
+              <select
+                {...register('collection_id')}
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="Ex: Verão 2026"
-              />
+              >
+                <option value="">Selecione uma coleção...</option>
+                {collections.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria</label>
@@ -148,61 +153,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                 placeholder="99.90"
               />
               {errors.price && <span className="text-red-500 text-xs mt-1 block">{errors.price.message}</span>}
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Preço Promocional (R$)</label>
-              <input
-                type="number"
-                step="0.01"
-                {...register('promotionalPrice')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 font-heading text-xl text-[#FF4D00]"
-                placeholder="79.90"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Custo (R$)</label>
-              <input
-                type="number"
-                step="0.01"
-                {...register('costPrice')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="35.00"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SEO */}
-        <div className="space-y-6">
-          <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
-            SEO
-          </h4>
-          
-          <div className="space-y-6">
-            <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Meta Title</label>
-              <input
-                {...register('metaTitle')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="Título para buscadores..."
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Meta Description</label>
-              <textarea
-                {...register('metaDescription')}
-                rows={3}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none"
-                placeholder="Descrição para buscadores..."
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Keywords</label>
-              <input
-                {...register('keywords')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="palavra1, palavra2..."
-              />
             </div>
           </div>
         </div>

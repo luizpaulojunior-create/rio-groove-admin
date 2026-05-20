@@ -18,9 +18,13 @@ export const productsService = {
   },
 
   async createProduct(formData) {
+    const isFormData = formData instanceof FormData;
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+    
     const res = await fetch(`${API_URL}/products`, {
       method: 'POST',
-      body: formData
+      headers,
+      body: isFormData ? formData : JSON.stringify(formData)
     }).catch(() => {
       throw new Error('Falha de conexão. Verifique se o backend está rodando na porta 3000.');
     });
@@ -33,9 +37,13 @@ export const productsService = {
   },
 
   async updateProduct(id, formData) {
+    const isFormData = formData instanceof FormData;
+    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+
     const res = await fetch(`${API_URL}/products/${id}`, {
       method: 'PUT',
-      body: formData
+      headers,
+      body: isFormData ? formData : JSON.stringify(formData)
     }).catch(() => {
       throw new Error('Falha de conexão. Verifique se o backend está rodando na porta 3000.');
     });
