@@ -84,13 +84,13 @@ export default function Collections() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="font-heading text-4xl">Coleções</h1>
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-8">
+        <div className="flex justify-center p-12">
           <div className="w-8 h-8 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
@@ -110,32 +110,32 @@ export default function Collections() {
         title={editingCollection ? "Editar Coleção" : "Nova Coleção"}
         maxWidth="max-w-2xl"
       >
-        <form className="space-y-4" onSubmit={handleSave}>
+        <form className="space-y-6" onSubmit={handleSave}>
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Nome da Coleção</label>
-            <input name="name" defaultValue={editingCollection?.name} required className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors" />
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Nome da Coleção</label>
+            <input name="name" defaultValue={editingCollection?.name} required className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Slug</label>
-            <input name="slug" defaultValue={editingCollection?.slug} required className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors" />
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Slug</label>
+            <input name="slug" defaultValue={editingCollection?.slug} required className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Descrição</label>
-            <textarea name="description" defaultValue={editingCollection?.description} rows={3} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none" />
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Descrição</label>
+            <textarea name="description" defaultValue={editingCollection?.description} rows={4} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none" />
           </div>
           
-          <div className="pt-4 flex justify-end gap-3 border-t border-[var(--color-border)]">
+          <div className="pt-6 flex justify-end gap-3 border-t border-[var(--color-border)] mt-8">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 rounded-xl text-white bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+              className="btn-secondary"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] transition-colors glow-red font-medium disabled:opacity-50"
+              className="btn-primary"
             >
               {isSubmitting ? 'Salvando...' : 'Salvar Coleção'}
             </button>

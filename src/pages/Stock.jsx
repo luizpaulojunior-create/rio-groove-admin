@@ -225,17 +225,20 @@ export default function Stock() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-panel p-6 border-l-4 border-[var(--color-primary)]">
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2">Total de Lisas</p>
-          <h3 className="font-heading text-4xl">{totalItems}</h3>
+        <div className="card-premium relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[var(--color-primary)]" />
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2">Total de Lisas</p>
+          <h3 className="font-heading text-5xl">{totalItems}</h3>
         </div>
-        <div className="glass-panel p-6 border-l-4 border-yellow-500">
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2">Atenção (Baixo Estoque)</p>
-          <h3 className="font-heading text-4xl text-yellow-500">{lowStockCount}</h3>
+        <div className="card-premium relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-yellow-500" />
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2">Atenção (Baixo Estoque)</p>
+          <h3 className="font-heading text-5xl text-yellow-500">{lowStockCount}</h3>
         </div>
-        <div className="glass-panel p-6 border-l-4 border-red-500">
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2">Crítico (Sem Estoque)</p>
-          <h3 className="font-heading text-4xl text-red-500">{outOfStockCount}</h3>
+        <div className="card-premium relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2">Crítico (Sem Estoque)</p>
+          <h3 className="font-heading text-5xl text-red-500">{outOfStockCount}</h3>
         </div>
       </div>
 
@@ -274,7 +277,7 @@ export default function Stock() {
               <select
                 name="adjustType"
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 appearance-none"
               >
                 <option value="in">Entrada Manual (+)</option>
                 <option value="out">Saída Manual (-)</option>
@@ -289,7 +292,7 @@ export default function Stock() {
                 type="number"
                 min="0"
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors font-heading text-xl"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 font-heading text-2xl"
               />
             </div>
             
@@ -299,23 +302,23 @@ export default function Stock() {
                 name="reason"
                 required
                 placeholder="Ex: Reposição, Descarte, Recontagem..."
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
               />
             </div>
           </div>
           
-          <div className="pt-4 flex justify-end gap-3 border-t border-[var(--color-border)]">
+          <div className="pt-6 flex justify-end gap-3 border-t border-[var(--color-border)] mt-8">
             <button
               type="button"
               onClick={() => setIsAdjustModalOpen(false)}
-              className="px-4 py-2 rounded-xl text-white bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+              className="btn-secondary"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isProcessing}
-              className="px-4 py-2 rounded-xl text-white bg-blue-500 hover:bg-blue-600 transition-colors font-medium disabled:opacity-50"
+              className="btn-primary !bg-blue-600 hover:!bg-blue-700 shadow-[0_0_20px_rgba(37,99,235,0.2)]"
             >
               {isProcessing ? 'Confirmando...' : 'Confirmar Ajuste'}
             </button>
@@ -336,7 +339,7 @@ export default function Stock() {
                 name="color"
                 defaultValue={editingItem?.color}
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Ex: Preta"
               />
             </div>
@@ -345,7 +348,7 @@ export default function Stock() {
               <select
                 name="size"
                 defaultValue={editingItem?.size || 'P'}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 appearance-none"
               >
                 <option value="P">P</option>
                 <option value="M">M</option>
@@ -362,7 +365,7 @@ export default function Stock() {
                 min="0"
                 defaultValue={editingItem?.quantity ?? 0}
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors font-heading text-xl"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 font-heading text-2xl"
               />
             </div>
             <div>
@@ -373,7 +376,7 @@ export default function Stock() {
                 min="0"
                 defaultValue={editingItem?.minStock ?? 5}
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
               />
             </div>
             <div>
@@ -381,7 +384,7 @@ export default function Stock() {
               <input
                 name="supplier"
                 defaultValue={editingItem?.supplier}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Nome da malharia..."
               />
             </div>
@@ -394,7 +397,7 @@ export default function Stock() {
                 min="0"
                 defaultValue={editingItem?.cost ?? 0}
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
               />
             </div>
             <div>
@@ -406,7 +409,7 @@ export default function Stock() {
                 step="0.1"
                 defaultValue={editingItem?.width || ''}
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Ex: 50"
               />
             </div>
@@ -419,24 +422,24 @@ export default function Stock() {
                 step="0.1"
                 defaultValue={editingItem?.height || ''}
                 required
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Ex: 70"
               />
             </div>
           </div>
           
-          <div className="pt-4 flex justify-end gap-3 border-t border-[var(--color-border)]">
+          <div className="pt-6 flex justify-end gap-3 border-t border-[var(--color-border)] mt-8">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 rounded-xl text-white bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+              className="btn-secondary"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isProcessing}
-              className="px-4 py-2 rounded-xl text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] transition-colors glow-red font-medium disabled:opacity-50"
+              className="btn-primary"
             >
               {isProcessing ? 'Salvando...' : 'Salvar Estoque'}
             </button>

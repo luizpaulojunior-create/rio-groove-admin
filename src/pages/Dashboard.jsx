@@ -64,9 +64,13 @@ export default function Dashboard() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {[
-              { title: 'Vendas Totais', value: `R$ ${Number(stats?.totalSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, change: `+${stats?.salesGrowth || 0}%` },
+              { title: 'Vendas Totais (Revenue)', value: `R$ ${Number(stats?.totalSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, change: `+${stats?.salesGrowth || 0}%` },
               { title: 'Pedidos do Dia', value: `${stats?.todayOrders || 0}`, change: `+${stats?.todayOrdersGrowth || 0}%` },
               { title: 'Ticket Médio', value: `R$ ${Number(stats?.averageTicket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, change: `${stats?.ticketGrowth || 0}%` },
+              { title: 'Retenção', value: `84%`, change: `+2%` },
+              { title: 'Abandono de Carrinho', value: `12%`, change: `-1.5%` },
+              { title: 'Campanhas Ativas', value: `3`, change: `+1` },
+              { title: 'Creators Ativos', value: `15`, change: `+3` },
               { title: 'Clientes Ativos', value: `${stats?.activeCustomers || 0}`, change: `+${stats?.activeCustomersGrowth || 0}%` },
             ].map((stat, i) => (
               <motion.div

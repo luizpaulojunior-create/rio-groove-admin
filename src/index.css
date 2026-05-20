@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ff2b06;
-  --color-primary-hover: #ff3b1a;
+  --color-primary: #ff4d00;
+  --color-primary-hover: #ff6a00;
   --color-background: #050505;
-  --color-surface: #0b0b0b;
+  --color-surface: #0d0d0d;
   --color-text: #ffffff;
-  --color-text-muted: #9ca3af;
-  --color-border: rgba(255, 255, 255, 0.05);
+  --color-text-muted: rgba(255, 255, 255, 0.65);
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-status-green: #22c55e;
+  --color-status-yellow: #eab308;
   
   --font-heading: 'Bebas Neue', Anton, sans-serif;
   --font-sans: 'Inter', sans-serif;
@@ -19,32 +21,89 @@
   }
 
   body {
-    @apply bg-[var(--color-background)] text-[var(--color-text)] font-sans antialiased;
+    @apply bg-[var(--color-background)] text-[var(--color-text)] font-sans antialiased min-h-screen;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-wider;
+    @apply font-heading tracking-wide font-bold uppercase;
   }
 }
 
-@layer utilities {
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 24px;
-  }
-  
-  .glass-panel-hover {
-    @apply hover:bg-[rgba(255,255,255,0.04)] transition-colors duration-300;
+@layer components {
+  /* Cards */
+  .card-premium {
+    @apply bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 transition-all duration-300;
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.02);
   }
 
+  .card-premium-hover:hover {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-[var(--color-primary)] text-white rounded-2xl h-12 px-6 flex items-center justify-center font-heading tracking-wider uppercase transition-all duration-300;
+  }
+  
+  .btn-primary:hover {
+    box-shadow: 0 0 30px rgba(255, 77, 0, 0.25);
+    @apply bg-[var(--color-primary-hover)];
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-[var(--color-border)] text-white rounded-2xl h-12 px-6 flex items-center justify-center font-sans font-medium transition-all duration-300;
+  }
+  
+  .btn-secondary:hover {
+    @apply bg-white/5 border-white/10;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Badges */
+  .badge-premium {
+    @apply rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide backdrop-blur-md transition-all;
+  }
+
+  /* Status Glows */
+  .glow-green {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+  }
+  .glow-yellow {
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.2);
+  }
   .glow-red {
-    box-shadow: 0 0 40px rgba(255, 43, 6, 0.08);
+    box-shadow: 0 0 40px rgba(255, 77, 0, 0.15);
+  }
+
+  /* Tables */
+  .table-premium {
+    @apply w-full text-left border-collapse;
+  }
+  
+  .table-premium th {
+    @apply text-[var(--color-text-muted)] font-medium text-sm py-4 px-4 border-b border-[var(--color-border)] font-sans;
+  }
+  
+  .table-premium td {
+    @apply py-4 px-4 border-b border-[var(--color-border)] transition-colors duration-200;
+  }
+  
+  .table-premium tbody tr:hover td {
+    @apply bg-white/[0.02];
+  }
+
+  /* Glass / Legacy classes updated */
+  .glass-panel {
+    @apply bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 transition-all duration-300;
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  }
+  
+  .glass-panel-hover:hover {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .glow-red-hover:hover {
-    box-shadow: 0 0 40px rgba(255, 43, 6, 0.15);
+    box-shadow: 0 0 40px rgba(255, 77, 0, 0.25);
   }
 
   .text-glow {

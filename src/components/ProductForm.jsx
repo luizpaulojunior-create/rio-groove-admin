@@ -43,88 +43,88 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-10">
       {/* Imagens */}
       <div className="space-y-4">
-        <h4 className="text-lg font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-2">
+        <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
           Galeria de Imagens (Cores da Camisa)
         </h4>
-        <p className="text-sm text-[var(--color-text-muted)]">
+        <p className="text-sm text-[var(--color-text-muted)] mb-4">
           Adicione as imagens das cores disponíveis para esta estampa. A primeira imagem principal será exibida na vitrine.
         </p>
         <UploadArea images={images} onChange={setImages} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Informações Básicas */}
-        <div className="space-y-4 md:col-span-2">
-          <h4 className="text-lg font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-2">
+        <div className="space-y-6 md:col-span-2">
+          <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
             Informações Básicas
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Nome da Estampa *</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Nome da Estampa *</label>
               <input
                 {...register('name', { required: 'Nome é obrigatório' })}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Ex: Zé Pilintra"
               />
-              {errors.name && <span className="text-red-500 text-xs mt-1">{errors.name.message}</span>}
+              {errors.name && <span className="text-red-500 text-xs mt-1 block">{errors.name.message}</span>}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Slug (URL) *</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Slug (URL) *</label>
               <input
                 {...register('slug', { required: 'Slug é obrigatório' })}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="ex-ze-pilintra"
               />
-              {errors.slug && <span className="text-red-500 text-xs mt-1">{errors.slug.message}</span>}
+              {errors.slug && <span className="text-red-500 text-xs mt-1 block">{errors.slug.message}</span>}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Descrição Curta</label>
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Descrição Curta</label>
             <input
               {...register('shortDescription')}
-              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
               placeholder="Breve resumo da estampa..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Descrição Completa</label>
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Descrição Completa</label>
             <textarea
               {...register('description')}
               rows={4}
-              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none"
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none"
               placeholder="Detalhes completos..."
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Coleção</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção</label>
               <input
                 {...register('collection')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Ex: Verão 2026"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Categoria</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria</label>
               <input
                 {...register('category')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Ex: Camisetas"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Tags (separadas por vírgula)</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Tags (separadas por vírgula)</label>
               <input
                 {...register('tags')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="umbanda, orixa, exu"
               />
             </div>
@@ -132,40 +132,40 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         </div>
 
         {/* Preços */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-2">
+        <div className="space-y-6">
+          <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
             Preços
           </h4>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Preço de Venda (R$) *</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Preço de Venda (R$) *</label>
               <input
                 type="number"
                 step="0.01"
                 {...register('price', { required: 'Preço é obrigatório' })}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 font-heading text-xl"
                 placeholder="99.90"
               />
-              {errors.price && <span className="text-red-500 text-xs mt-1">{errors.price.message}</span>}
+              {errors.price && <span className="text-red-500 text-xs mt-1 block">{errors.price.message}</span>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Preço Promocional (R$)</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Preço Promocional (R$)</label>
               <input
                 type="number"
                 step="0.01"
                 {...register('promotionalPrice')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 font-heading text-xl text-[#FF4D00]"
                 placeholder="79.90"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Custo (R$)</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Custo (R$)</label>
               <input
                 type="number"
                 step="0.01"
                 {...register('costPrice')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="35.00"
               />
             </div>
@@ -173,34 +173,34 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         </div>
 
         {/* SEO */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-2">
+        <div className="space-y-6">
+          <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
             SEO
           </h4>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Meta Title</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Meta Title</label>
               <input
                 {...register('metaTitle')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="Título para buscadores..."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Meta Description</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Meta Description</label>
               <textarea
                 {...register('metaDescription')}
-                rows={2}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none"
+                rows={3}
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none"
                 placeholder="Descrição para buscadores..."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-muted)] mb-1">Keywords</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Keywords</label>
               <input
                 {...register('keywords')}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
                 placeholder="palavra1, palavra2..."
               />
             </div>
@@ -208,21 +208,21 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         </div>
       </div>
 
-      <div className="pt-6 border-t border-[var(--color-border)] flex justify-end gap-4">
+      <div className="pt-8 border-t border-[var(--color-border)] flex justify-end gap-4 mt-8">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2.5 rounded-xl font-medium text-white bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          className="btn-secondary"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-6 py-2.5 rounded-xl font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] transition-colors glow-red disabled:opacity-50 flex items-center gap-2"
+          className="btn-primary"
         >
           {isLoading && (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
           )}
           {initialData ? 'Atualizar Produto' : 'Cadastrar Produto'}
         </button>

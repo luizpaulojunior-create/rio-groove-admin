@@ -100,17 +100,17 @@ export default function ProductList() {
 
   if (loading) {
     return (
-      <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-        <p>Carregando produtos...</p>
+      <div className="flex justify-center p-12">
+        <div className="w-8 h-8 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div style={{ padding: '1.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '8px' }}>
-        <p style={{ margin: 0 }}>{error}</p>
-        <button onClick={fetchProducts} style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#991b1b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+      <div className="card-premium border-red-500/20 bg-red-500/5 text-center p-8">
+        <p className="text-red-400 mb-4">{error}</p>
+        <button onClick={fetchProducts} className="btn-secondary !h-10 mx-auto">
           Tentar novamente
         </button>
       </div>
@@ -119,8 +119,8 @@ export default function ProductList() {
 
   if (isFormOpen) {
     return (
-      <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '2rem', color: '#0f172a', fontSize: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+      <div className="card-premium max-w-4xl mx-auto">
+        <h2 className="font-heading text-3xl mb-8 border-b border-[var(--color-border)] pb-4 text-white">
           {editingProduct ? 'Editar Produto' : 'Adicionar Novo Produto'}
         </h2>
         <ProductForm 
@@ -134,35 +134,33 @@ export default function ProductList() {
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.5rem' }}>Produtos</h2>
-          <p style={{ margin: '0.5rem 0 0 0', color: '#64748b', fontSize: '0.875rem' }}>Gerencie o catálogo da sua loja</p>
+          <h1 className="font-heading text-4xl mb-2">Produtos</h1>
+          <p className="text-[var(--color-text-muted)] font-sans">Gerencie o catálogo da sua loja</p>
         </div>
         <button 
           onClick={handleAddNew}
-          style={{ padding: '0.75rem 1.25rem', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background-color 0.2s' }}
-          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#1e293b' }}
-          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#0f172a' }}
+          className="btn-primary"
         >
-          <span>+</span> Novo Produto
+          Novo Produto
         </button>
       </div>
 
       {products.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', backgroundColor: 'white', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: '#0f172a' }}>Nenhum produto encontrado</h3>
-          <p style={{ margin: '0 0 1.5rem 0', color: '#64748b' }}>Comece adicionando seu primeiro produto ao catálogo.</p>
+        <div className="card-premium border-dashed text-center p-12 flex flex-col items-center">
+          <h3 className="font-heading text-2xl text-white mb-2">Nenhum produto encontrado</h3>
+          <p className="text-[var(--color-text-muted)] font-sans mb-6">Comece adicionando seu primeiro produto ao catálogo.</p>
           <button 
             onClick={handleAddNew}
-            style={{ padding: '0.5rem 1rem', backgroundColor: 'white', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: '500' }}
+            className="btn-secondary"
           >
             Adicionar Produto
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map(product => (
             <ProductCard 
               key={product.id} 

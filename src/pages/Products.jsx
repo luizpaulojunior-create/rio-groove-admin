@@ -5,6 +5,7 @@ import ProductForm from '../components/ProductForm';
 import { productsService } from '../services/products';
 import { storageService } from '../services/storage';
 import { toast } from 'react-toastify';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -109,13 +110,22 @@ export default function Products() {
     {
       header: 'Estampa',
       accessor: 'name',
-      render: (row) => (
+      render: (row) => {
+        const imageUrl = row.image_url || 
+          (row.product_images && row.product_images.length > 0 ? row.product_images[0].image_url : null) || 
+          (row.images && row.images.length > 0 ? (row.images.find(i => i.isMain)?.preview || row.images.find(i => i.isMain)?.url || row.images[0].url) : null);
+        
+        return (
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] overflow-hidden shrink-0">
-            {row.images && row.images.length > 0 ? (
-              <img src={row.images.find(i => i.isMain)?.preview || row.images.find(i => i.isMain)?.url || row.images[0].url} alt={row.name} className="w-full h-full object-cover" loading="lazy" width="40" height="40" />
+          <div className="w-[72px] h-[72px] rounded-2xl bg-[#0D0D0D] border border-[var(--color-border)] overflow-hidden shrink-0 transition-all hover:shadow-[0_0_15px_rgba(255,43,6,0.3)] hover:border-[var(--color-primary)]">
+            {imageUrl ? (
+              <img src={normalizeImageUrl(imageUrl)} alt={row.name} className="w-full h-full object-cover transition-transform hover:scale-105" loading="lazy" width="72" height="72" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-[var(--color-text-muted)] text-xs">Sem img</div>
+              <div className="w-full h-full flex items-center justify-center text-[var(--color-text-muted)]">
+                <svg className="w-6 h-6 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
             )}
           </div>
           <div>
@@ -123,9 +133,9 @@ export default function Products() {
             <p className="text-xs text-[var(--color-text-muted)]">Slug: {row.slug}</p>
           </div>
         </div>
-      )
+      )}
     },
-    { header: 'Coleção', accessor: 'collection', render: (row) => row.collection || '-' },
+    { header: 'Coleção', accessor: 'collection', render: (row) => row.collections?.name || row.collection || '-' },
     { header: 'Categoria', accessor: 'category', render: (row) => row.category || '-' },
     {
       header: 'Preço',
@@ -142,20 +152,22 @@ export default function Products() {
     {
       header: 'Cores Disponíveis',
       accessor: 'images',
-      render: (row) => (
+      render: (row) => {
+        const images = row.product_images || row.images || [];
+        return (
         <div className="flex -space-x-2">
-          {(row.images || []).slice(0, 3).map((img, i) => (
+          {images.slice(0, 3).map((img, i) => (
             <div key={i} className="w-8 h-8 rounded-full border-2 border-[var(--color-surface)] overflow-hidden bg-white">
-              <img src={img.preview || img.url} alt="" className="w-full h-full object-cover" loading="lazy" width="32" height="32" />
+              <img src={normalizeImageUrl(img.image_url || img.preview || img.url)} alt="" className="w-full h-full object-cover" loading="lazy" width="32" height="32" />
             </div>
           ))}
-          {(row.images?.length || 0) > 3 && (
-            <div className="w-8 h-8 rounded-full border-2 border-[var(--color-surface)] bg-[var(--color-border)] flex items-center justify-center text-xs text-white">
-              +{(row.images.length - 3)}
+          {images.length > 3 && (
+            <div className="w-8 h-8 rounded-full border-2 border-[var(--color-surface)] bg-[#0D0D0D] flex items-center justify-center text-xs text-white">
+              +{images.length - 3}
             </div>
           )}
         </div>
-      )
+      )}
     }
   ];
 

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { UploadCloud, X, GripVertical, Star } from 'lucide-react';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 export default function UploadArea({ images = [], onChange }) {
   const [dragActive, setDragActive] = useState(false);
@@ -118,7 +119,7 @@ export default function UploadArea({ images = [], onChange }) {
               }`}
             >
               <img
-                src={img.preview || img.url}
+                src={normalizeImageUrl(img.preview || img.url)}
                 alt=""
                 className="w-full h-full object-cover"
                 loading="lazy"

@@ -10,6 +10,12 @@ import {
   Truck, 
   BarChart3, 
   Settings,
+  Megaphone,
+  BookOpen,
+  Users,
+  Star,
+  HeartHandshake,
+  Award,
   X
 } from 'lucide-react';
 
@@ -19,10 +25,19 @@ const menuItems = [
   { path: '/admin/products', name: 'Produtos', icon: Package },
   { path: '/admin/stock', name: 'Estoque', icon: Boxes },
   { path: '/admin/collections', name: 'Coleções', icon: Layers },
-  { path: '/admin/shipping', name: 'Melhor Envio', icon: Truck },
   { path: '/admin/stats', name: 'Estatísticas', icon: BarChart3 },
-  { path: '/admin/settings', name: 'Configurações', icon: Settings },
 ];
+
+const growthItems = [
+  { path: '/admin/campaigns', name: 'Campanhas', icon: Megaphone },
+  { path: '/admin/editorial', name: 'Editorial', icon: BookOpen },
+  { path: '/admin/community', name: 'Community', icon: Users },
+  { path: '/admin/creators', name: 'Creators', icon: Star },
+  { path: '/admin/crm', name: 'CRM', icon: HeartHandshake },
+  { path: '/admin/loyalty', name: 'Loyalty', icon: Award },
+];
+
+const settingsItem = { path: '/admin/settings', name: 'Configurações', icon: Settings };
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const SidebarContent = (
@@ -43,11 +58,56 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-        {menuItems.map((item) => (
+      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
+        
+        {/* Core Operational */}
+        <div className="space-y-2">
+          <p className="px-4 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Operacional</p>
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsOpen(false)}
+              className={({ isActive }) => `
+                flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300
+                ${isActive 
+                  ? 'bg-gradient-to-r from-[rgba(255,43,6,0.2)] to-transparent border-l-3 border-[var(--color-primary)] text-white glow-red' 
+                  : 'text-[var(--color-text-muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-white'
+                }
+              `}
+            >
+              <item.icon size={22} />
+              <span className="font-medium text-lg">{item.name}</span>
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Growth & Branding */}
+        <div className="space-y-2">
+          <p className="px-4 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Growth & Branding</p>
+          {growthItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsOpen(false)}
+              className={({ isActive }) => `
+                flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300
+                ${isActive 
+                  ? 'bg-gradient-to-r from-[rgba(255,43,6,0.2)] to-transparent border-l-3 border-[var(--color-primary)] text-white glow-red' 
+                  : 'text-[var(--color-text-muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-white'
+                }
+              `}
+            >
+              <item.icon size={22} />
+              <span className="font-medium text-lg">{item.name}</span>
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Settings */}
+        <div className="space-y-2 pt-4 border-t border-[var(--color-border)]">
           <NavLink
-            key={item.path}
-            to={item.path}
+            to={settingsItem.path}
             onClick={() => setIsOpen(false)}
             className={({ isActive }) => `
               flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300
@@ -57,10 +117,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               }
             `}
           >
-            <item.icon size={22} />
-            <span className="font-medium text-lg">{item.name}</span>
+            <settingsItem.icon size={22} />
+            <span className="font-medium text-lg">{settingsItem.name}</span>
           </NavLink>
-        ))}
+        </div>
       </nav>
     </div>
   );

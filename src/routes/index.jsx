@@ -9,10 +9,16 @@ const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Products = lazy(() => import('../pages/Products'));
 const Stock = lazy(() => import('../pages/Stock'));
 const Collections = lazy(() => import('../pages/Collections'));
-const Shipping = lazy(() => import('../pages/Shipping'));
-const ShippingCallback = lazy(() => import('../pages/ShippingCallback'));
 const Stats = lazy(() => import('../pages/Stats'));
 const Settings = lazy(() => import('../pages/Settings'));
+
+// Novos Módulos de Growth
+const Campaigns = lazy(() => import('../pages/Campaigns'));
+const Editorial = lazy(() => import('../pages/Editorial'));
+const Community = lazy(() => import('../pages/Community'));
+const Creators = lazy(() => import('../pages/Creators'));
+const CRM = lazy(() => import('../pages/CRM'));
+const Loyalty = lazy(() => import('../pages/Loyalty'));
 
 const LoadingFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">
@@ -35,10 +41,16 @@ export default function AppRoutes() {
         <Route path="products" element={<Products />} />
         <Route path="stock" element={<Stock />} />
         <Route path="collections" element={<Collections />} />
-        <Route path="shipping" element={<Shipping />} />
-        <Route path="shipping/callback" element={<ShippingCallback />} />
         <Route path="stats" element={<Stats />} />
         <Route path="settings" element={<Settings />} />
+        
+        {/* Novas Rotas Growth */}
+        <Route path="campaigns" element={<Campaigns />} />
+        <Route path="editorial" element={<Editorial />} />
+        <Route path="community" element={<Community />} />
+        <Route path="creators" element={<Creators />} />
+        <Route path="crm" element={<CRM />} />
+        <Route path="loyalty" element={<Loyalty />} />
         </Route>
       </Route>
     </Routes>

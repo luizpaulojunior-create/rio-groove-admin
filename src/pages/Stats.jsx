@@ -41,40 +41,40 @@ export default function Stats() {
       
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-panel p-6 relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
+        <div className="card-premium relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
           <div className="absolute -right-4 -top-4 text-[rgba(255,255,255,0.02)] group-hover:text-[rgba(255,43,6,0.05)] transition-colors">
             <TrendingUp size={100} />
           </div>
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2 relative z-10">Vendas (Mês)</p>
-          <h3 className="font-heading text-4xl relative z-10">R$ {Number(stats.totalSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-          <span className="text-green-500 text-sm font-medium mt-2 block relative z-10">+{stats.salesGrowth || 0}% vs mês ant.</span>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2 relative z-10">Vendas (Mês)</p>
+          <h3 className="font-heading text-5xl relative z-10">R$ {Number(stats.totalSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+          <span className="text-[#22C55E] text-xs font-sans font-medium mt-2 block relative z-10">+{stats.salesGrowth || 0}% vs mês ant.</span>
         </div>
         
-        <div className="glass-panel p-6 relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
+        <div className="card-premium relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
           <div className="absolute -right-4 -top-4 text-[rgba(255,255,255,0.02)] group-hover:text-[rgba(255,43,6,0.05)] transition-colors">
             <ShoppingBag size={100} />
           </div>
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2 relative z-10">Pedidos (Mês)</p>
-          <h3 className="font-heading text-4xl relative z-10">{stats.totalOrders || 0}</h3>
-          <span className="text-green-500 text-sm font-medium mt-2 block relative z-10">+{stats.ordersGrowth || 0}% vs mês ant.</span>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2 relative z-10">Pedidos (Mês)</p>
+          <h3 className="font-heading text-5xl relative z-10">{stats.totalOrders || 0}</h3>
+          <span className="text-[#22C55E] text-xs font-sans font-medium mt-2 block relative z-10">+{stats.ordersGrowth || 0}% vs mês ant.</span>
         </div>
         
-        <div className="glass-panel p-6 relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
+        <div className="card-premium relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
           <div className="absolute -right-4 -top-4 text-[rgba(255,255,255,0.02)] group-hover:text-[rgba(255,43,6,0.05)] transition-colors">
             <Users size={100} />
           </div>
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2 relative z-10">Novos Clientes</p>
-          <h3 className="font-heading text-4xl relative z-10">{stats.newCustomers || 0}</h3>
-          <span className="text-red-500 text-sm font-medium mt-2 block relative z-10">{stats.customersGrowth || 0}% vs mês ant.</span>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2 relative z-10">Novos Clientes</p>
+          <h3 className="font-heading text-5xl relative z-10">{stats.newCustomers || 0}</h3>
+          <span className="text-red-500 text-xs font-sans font-medium mt-2 block relative z-10">{stats.customersGrowth || 0}% vs mês ant.</span>
         </div>
         
-        <div className="glass-panel p-6 relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
+        <div className="card-premium relative overflow-hidden group hover:border-[var(--color-primary)] transition-colors">
           <div className="absolute -right-4 -top-4 text-[rgba(255,255,255,0.02)] group-hover:text-[rgba(255,43,6,0.05)] transition-colors">
             <Shirt size={100} />
           </div>
-          <p className="text-[var(--color-text-muted)] text-sm font-medium mb-2 relative z-10">Lisas Consumidas</p>
-          <h3 className="font-heading text-4xl relative z-10">{stats.itemsConsumed || 0}</h3>
-          <span className="text-green-500 text-sm font-medium mt-2 block relative z-10">Alta rotatividade</span>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium mb-2 relative z-10">Lisas Consumidas</p>
+          <h3 className="font-heading text-5xl relative z-10">{stats.itemsConsumed || 0}</h3>
+          <span className="text-[#22C55E] text-xs font-sans font-medium mt-2 block relative z-10">Alta rotatividade</span>
         </div>
       </div>
 
@@ -82,19 +82,19 @@ export default function Stats() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Chart Area */}
-        <div className="lg:col-span-2 glass-panel p-6 min-h-[400px] flex flex-col">
-          <h3 className="text-lg font-heading tracking-wide mb-6 border-b border-[var(--color-border)] pb-2 text-white">
+        <div className="lg:col-span-2 card-premium min-h-[400px] flex flex-col">
+          <h3 className="text-2xl font-heading tracking-wide mb-6 border-b border-[var(--color-border)] pb-3 text-white">
             Receita vs Pedidos
           </h3>
-          <div className="flex-1 flex items-center justify-center border-2 border-dashed border-[var(--color-border)] rounded-xl bg-[rgba(255,255,255,0.01)]">
-            <p className="text-[var(--color-text-muted)]">Integração de Gráficos (Ex: Chart.js)</p>
+          <div className="flex-1 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-2xl bg-[rgba(255,255,255,0.01)]">
+            <p className="text-[var(--color-text-muted)] font-sans text-sm">Integração de Gráficos (Ex: Chart.js)</p>
           </div>
         </div>
 
         {/* Top Products/Sizes */}
         <div className="space-y-6">
-          <div className="glass-panel p-6">
-            <h3 className="text-lg font-heading tracking-wide mb-4 border-b border-[var(--color-border)] pb-2 text-white">
+          <div className="card-premium">
+            <h3 className="text-2xl font-heading tracking-wide mb-6 border-b border-[var(--color-border)] pb-3 text-white">
               Tamanhos Mais Vendidos
             </h3>
             <div className="space-y-4">
@@ -116,8 +116,8 @@ export default function Stats() {
             </div>
           </div>
 
-          <div className="glass-panel p-6">
-            <h3 className="text-lg font-heading tracking-wide mb-4 border-b border-[var(--color-border)] pb-2 text-white">
+          <div className="card-premium">
+            <h3 className="text-2xl font-heading tracking-wide mb-6 border-b border-[var(--color-border)] pb-3 text-white">
               Cores Base Mais Consumidas
             </h3>
             <div className="space-y-4">
