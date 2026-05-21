@@ -10,7 +10,6 @@ const normalizeArrayField = (value) => {
 
 const normalizeProductPayload = (formData) => ({
   ...formData,
-  tags: normalizeArrayField(formData.tags),
   collections: normalizeArrayField(formData.collections),
   images: normalizeArrayField(formData.images)
 });
@@ -38,15 +37,6 @@ export const productsService = {
     const isFormData = formData instanceof FormData;
 
     if (isFormData) {
-      if (formData.has('tags')) {
-        const tags = normalizeArrayField(formData.get('tags'));
-        formData.delete('tags');
-        if (tags.length > 0) {
-          tags.forEach(tag => formData.append('tags', tag));
-        } else {
-          formData.append('tags', '{}');
-        }
-      }
       if (formData.has('collections')) {
         const collections = normalizeArrayField(formData.get('collections'));
         formData.delete('collections');
@@ -73,15 +63,6 @@ export const productsService = {
     const isFormData = formData instanceof FormData;
 
     if (isFormData) {
-      if (formData.has('tags')) {
-        const tags = normalizeArrayField(formData.get('tags'));
-        formData.delete('tags');
-        if (tags.length > 0) {
-          tags.forEach(tag => formData.append('tags', tag));
-        } else {
-          formData.append('tags', '{}');
-        }
-      }
       if (formData.has('collections')) {
         const collections = normalizeArrayField(formData.get('collections'));
         formData.delete('collections');
