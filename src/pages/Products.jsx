@@ -65,28 +65,10 @@ export default function Products() {
       setIsSubmitting(true);
       const loadingToast = toast.loading(editingProduct ? 'Atualizando estampa...' : 'Criando estampa...');
       
-      const payload = new FormData();
-      
-      Object.keys(formData).forEach(key => {
-        if (key !== 'images') {
-          payload.append(key, formData[key] === null ? '' : formData[key]);
-        }
-      });
-
-      if (formData.images && formData.images.length > 0) {
-        formData.images.forEach(img => {
-          if (img.file) {
-            payload.append('images', img.file);
-          } else if (img.url || img.image_url || img.preview) {
-            payload.append('existing_images', JSON.stringify(img));
-          }
-        });
-      }
-
       if (editingProduct) {
-        await productsService.updateProduct(editingProduct.id, payload);
+        await productsService.updateProduct(editingProduct.id, formData);
       } else {
-        await productsService.createProduct(payload);
+        await productsService.createProduct(formData);
       }
       
       toast.update(loadingToast, { render: editingProduct ? 'Estampa atualizada!' : 'Estampa criada!', type: 'success', isLoading: false, autoClose: 3000 });

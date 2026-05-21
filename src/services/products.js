@@ -8,12 +8,6 @@ const normalizeArrayField = (value) => {
   return String(value).split(',').map(item => item.trim()).filter(Boolean);
 };
 
-const normalizeProductPayload = (formData) => ({
-  ...formData,
-  collections: normalizeArrayField(formData.collections),
-  images: normalizeArrayField(formData.images)
-});
-
 export const productsService = {
   async getProducts() {
     try {
@@ -33,51 +27,76 @@ export const productsService = {
     }
   },
 
-  async createProduct(formData) {
-    const isFormData = formData instanceof FormData;
-
-    if (isFormData) {
-      if (formData.has('collections')) {
-        const collections = normalizeArrayField(formData.get('collections'));
-        formData.delete('collections');
-        if (collections.length > 0) {
-          collections.forEach(c => formData.append('collections', c));
-        } else {
-          formData.append('collections', '{}');
-        }
+  async createProduct(dataObj) {
+    const formData = new FormData();
+    
+    Object.keys(dataObj).forEach(key => {
+      if (key !== 'images' && key !== 'collections') {
+        formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
-      // We purposefully DO NOT stringify 'images' because it contains File objects
+    });
+
+    if (dataObj.collections) {
+      const collections = normalizeArrayField(dataObj.collections);
+      if (collections.length > 0) {
+        collections.forEach(c => formData.append('collections', c));
+      } else {
+        formData.append('collections', '[]');
+      }
     }
 
-    const dataToSend = isFormData ? formData : normalizeProductPayload(formData);
+    if (dataObj.images && Array.isArray(dataObj.images)) {
+      dataObj.images.forEach(image => {
+        if (image.file instanceof File) {
+          formData.append('images', image.file);
+        } else if (image.url || image.image_url || image.preview) {
+          formData.append('existing_images', JSON.stringify(image));
+        }
+      });
+    }
 
     try {
-      const { data } = await api.post('/products', dataToSend);
+      const { data } = await api.post('/products', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       return data;
     } catch (err) {
       throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao criar produto');
     }
   },
 
-  async updateProduct(id, formData) {
-    const isFormData = formData instanceof FormData;
+  async updateProduct(id, dataObj) {
+    const formData = new FormData();
+    
+    Object.keys(dataObj).forEach(key => {
+      if (key !== 'images' && key !== 'collections') {
+        formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
+      }
+    });
 
-    if (isFormData) {
-      if (formData.has('collections')) {
-        const collections = normalizeArrayField(formData.get('collections'));
-        formData.delete('collections');
-        if (collections.length > 0) {
-          collections.forEach(c => formData.append('collections', c));
-        } else {
-          formData.append('collections', '{}');
-        }
+    if (dataObj.collections) {
+      const collections = normalizeArrayField(dataObj.collections);
+      if (collections.length > 0) {
+        collections.forEach(c => formData.append('collections', c));
+      } else {
+        formData.append('collections', '[]');
       }
     }
 
-    const dataToSend = isFormData ? formData : normalizeProductPayload(formData);
+    if (dataObj.images && Array.isArray(dataObj.images)) {
+      dataObj.images.forEach(image => {
+        if (image.file instanceof File) {
+          formData.append('images', image.file);
+        } else if (image.url || image.image_url || image.preview) {
+          formData.append('existing_images', JSON.stringify(image));
+        }
+      });
+    }
 
     try {
-      const { data } = await api.put(`/products/${id}`, dataToSend);
+      const { data } = await api.put(`/products/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       return data;
     } catch (err) {
       throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao atualizar produto');
