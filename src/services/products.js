@@ -40,11 +40,21 @@ export const productsService = {
     if (isFormData) {
       if (formData.has('tags')) {
         const tags = normalizeArrayField(formData.get('tags'));
-        formData.set('tags', JSON.stringify(tags));
+        formData.delete('tags');
+        if (tags.length > 0) {
+          tags.forEach(tag => formData.append('tags', tag));
+        } else {
+          formData.append('tags', '{}');
+        }
       }
       if (formData.has('collections')) {
         const collections = normalizeArrayField(formData.get('collections'));
-        formData.set('collections', JSON.stringify(collections));
+        formData.delete('collections');
+        if (collections.length > 0) {
+          collections.forEach(c => formData.append('collections', c));
+        } else {
+          formData.append('collections', '{}');
+        }
       }
       // We purposefully DO NOT stringify 'images' because it contains File objects
     }
@@ -65,11 +75,21 @@ export const productsService = {
     if (isFormData) {
       if (formData.has('tags')) {
         const tags = normalizeArrayField(formData.get('tags'));
-        formData.set('tags', JSON.stringify(tags));
+        formData.delete('tags');
+        if (tags.length > 0) {
+          tags.forEach(tag => formData.append('tags', tag));
+        } else {
+          formData.append('tags', '{}');
+        }
       }
       if (formData.has('collections')) {
         const collections = normalizeArrayField(formData.get('collections'));
-        formData.set('collections', JSON.stringify(collections));
+        formData.delete('collections');
+        if (collections.length > 0) {
+          collections.forEach(c => formData.append('collections', c));
+        } else {
+          formData.append('collections', '{}');
+        }
       }
     }
 
