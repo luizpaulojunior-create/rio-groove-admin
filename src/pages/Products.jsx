@@ -115,6 +115,19 @@ export default function Products() {
     { header: 'Coleção', accessor: 'collection', render: (row) => row.collections?.name || row.collection || '-' },
     { header: 'Categoria', accessor: 'category', render: (row) => row.category || '-' },
     {
+      header: 'Cores',
+      accessor: 'colors',
+      render: (row) => (
+        <div className="flex gap-1 flex-wrap max-w-[120px]">
+          {row.colors && row.colors.length > 0 ? row.colors.map(color => (
+            <span key={color} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white whitespace-nowrap">
+              {color}
+            </span>
+          )) : <span className="text-[10px] text-[var(--color-text-muted)]">-</span>}
+        </div>
+      )
+    },
+    {
       header: 'Preço',
       accessor: 'price',
       render: (row) => (

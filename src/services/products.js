@@ -29,19 +29,11 @@ export const productsService = {
 
   async createProduct(dataObj) {
     const images = dataObj.images || [];
-    
-    console.log('IMAGES:', images);
-
-    images.forEach((image, index) => {
-      console.log('IMAGE', index, image);
-      console.log('FILE', image.file);
-      console.log('IS FILE', image.file instanceof File);
-    });
 
     const formData = new FormData();
     
     Object.keys(dataObj).forEach(key => {
-      if (key !== 'images' && key !== 'collections') {
+      if (key !== 'images' && key !== 'collections' && key !== 'colors') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
     });
@@ -53,6 +45,10 @@ export const productsService = {
       } else {
         formData.append('collections', '[]');
       }
+    }
+
+    if (dataObj.colors) {
+      formData.append('colors', JSON.stringify(dataObj.colors));
     }
 
     images.forEach(image => {
@@ -72,20 +68,12 @@ export const productsService = {
   },
 
   async updateProduct(id, dataObj) {
-    const images = dataObj.images || [];
-
-    console.log('IMAGES:', images);
-
-    images.forEach((image, index) => {
-      console.log('IMAGE', index, image);
-      console.log('FILE', image.file);
-      console.log('IS FILE', image.file instanceof File);
-    });
+    const images = dataObj.images;
 
     const formData = new FormData();
     
     Object.keys(dataObj).forEach(key => {
-      if (key !== 'images' && key !== 'collections') {
+      if (key !== 'images' && key !== 'collections' && key !== 'colors') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
     });
@@ -99,13 +87,22 @@ export const productsService = {
       }
     }
 
-    images.forEach(image => {
-      if (image.file instanceof File) {
-        formData.append('images', image.file);
-      } else if (image.url || image.image_url || image.preview) {
-        formData.append('existing_images', JSON.stringify(image));
-      }
-    });
+    if (dataObj.colors) {
+      formData.append('colors', JSON.stringify(dataObj.colors));
+    }
+
+    if (images !== undefined) {
+      formData.append('images_updated', 'true');
+      images.forEach(image => {
+        if (image.file instanceof File) {
+          formData.append('images', image.file);
+        } else if (image.url || image.image_url || image.preview) {
+          formData.append('existing_images', JSON.stringify(image));
+        }
+      });
+    } else {
+      formData.append('images_updated', 'false');
+    }
 
     try {
       const { data } = await api.put(`/products/${id}`, formData);

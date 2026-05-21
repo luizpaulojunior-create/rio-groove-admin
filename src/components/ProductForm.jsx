@@ -15,8 +15,15 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     }
   });
 
-  const [images, setImages] = useState(initialData?.images || []);
+  const [images, setImages] = useState(initialData?.product_images || initialData?.images || []);
+  const [imagesChanged, setImagesChanged] = useState(false);
   const [collections, setCollections] = useState([]);
+  
+  const COLORS_LIST = [
+    'Preto', 'Branco', 'Vermelho', 'Azul', 'Verde',
+    'Amarelo', 'Cinza', 'Rosa', 'Roxo'
+  ];
+  const [selectedColors, setSelectedColors] = useState(initialData?.colors || []);
 
   useEffect(() => {
     collectionsService.getCollections().then(data => {
@@ -40,7 +47,26 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   }, [nameValue, initialData, setValue]);
 
   const handleFormSubmit = (data) => {
-    onSubmit({ ...data, images });
+    const payload = { ...data, colors: selectedColors };
+    
+    if (!initialData || imagesChanged) {
+      payload.images = images;
+    }
+    
+    onSubmit(payload);
+  };
+
+  const toggleColor = (color) => {
+    if (selectedColors.includes(color)) {
+      setSelectedColors(selectedColors.filter(c => c !== color));
+    } else {
+      setSelectedColors([...selectedColors, color]);
+    }
+  };
+
+  const handleImagesChange = (newImages) => {
+    setImages(newImages);
+    setImagesChanged(true);
   };
 
   return (
@@ -53,7 +79,30 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         <p className="text-sm text-[var(--color-text-muted)] mb-4">
           Adicione as imagens das cores disponíveis para esta estampa. A primeira imagem principal será exibida na vitrine.
         </p>
-        <UploadArea images={images} onChange={setImages} />
+        <UploadArea images={images} onChange={handleImagesChange} />
+      </div>
+
+      {/* Cores */}
+      <div className="space-y-4">
+        <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
+          Cores Disponíveis
+        </h4>
+        <p className="text-sm text-[var(--color-text-muted)] mb-4">
+          Selecione as cores em que esta estampa está disponível.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {COLORS_LIST.map(color => (
+            <label key={color} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-[rgba(255,255,255,0.05)] transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedColors.includes(color)}
+                onChange={() => toggleColor(color)}
+                className="w-4 h-4 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+              />
+              <span className="text-sm text-white">{color}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
