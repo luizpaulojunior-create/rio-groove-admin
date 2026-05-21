@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
@@ -102,7 +103,7 @@ export default function Products() {
         
         return (
         <div className="flex items-center gap-3">
-          <div className="w-[72px] h-[72px] rounded-2xl bg-[#0D0D0D] border border-[var(--color-border)] overflow-hidden shrink-0 transition-all hover:shadow-[0_0_15px_rgba(255,43,6,0.3)] hover:border-[var(--color-primary)]">
+          <Link to={`/admin/products/${row.id}`} className="w-[72px] h-[72px] rounded-2xl bg-[#0D0D0D] border border-[var(--color-border)] overflow-hidden shrink-0 transition-all hover:shadow-[0_0_15px_rgba(255,43,6,0.3)] hover:border-[var(--color-primary)] block">
             {imageUrl ? (
               <img src={normalizeImageUrl(imageUrl)} alt={row.name} className="w-full h-full object-cover transition-transform hover:scale-105" loading="lazy" width="72" height="72" />
             ) : (
@@ -112,9 +113,9 @@ export default function Products() {
                 </svg>
               </div>
             )}
-          </div>
+          </Link>
           <div>
-            <p className="font-medium text-white">{row.name}</p>
+            <Link to={`/admin/products/${row.id}`} className="font-medium text-white hover:text-[var(--color-primary)] transition-colors inline-block">{row.name}</Link>
             <p className="text-xs text-[var(--color-text-muted)]">Slug: {row.slug}</p>
           </div>
         </div>
@@ -135,8 +136,8 @@ export default function Products() {
         return (
           <div className="flex gap-1 flex-wrap max-w-[120px]">
             {fabrics.length > 0 ? fabrics.map(fabric => (
-              <span key={fabric} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white whitespace-nowrap">
-                {fabric}
+              <span key={fabric} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white whitespace-nowrap capitalize">
+                {fabric === 'offWhite' ? 'Off White' : fabric}
               </span>
             )) : <span className="text-[10px] text-[var(--color-text-muted)]">-</span>}
           </div>
@@ -220,7 +221,6 @@ export default function Products() {
         <DataTable
           columns={columns}
           data={products}
-          onEdit={handleEdit}
           onDelete={handleDelete}
           onAdd={handleAdd}
           addButtonText="Nova Estampa"

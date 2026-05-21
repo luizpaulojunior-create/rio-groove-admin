@@ -203,7 +203,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
           Aparência da Malha
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {['Liso', 'Estonado'].map(appearance => (
+          {['liso', 'estonado', 'offWhite'].map(appearance => (
             <label key={appearance} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-[rgba(255,255,255,0.05)] transition-colors">
               <input
                 type="checkbox"
@@ -217,7 +217,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                 }}
                 className="w-4 h-4 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
-              <span className="text-sm text-white">{appearance}</span>
+              <span className="text-sm text-white capitalize">{appearance === 'offWhite' ? 'Off White' : appearance}</span>
             </label>
           ))}
         </div>

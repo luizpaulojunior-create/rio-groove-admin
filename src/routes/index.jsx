@@ -7,6 +7,7 @@ import Orders from '../pages/Orders';
 const Login = lazy(() => import('../pages/Login'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Products = lazy(() => import('../pages/Products'));
+const ProductDetail = lazy(() => import('../pages/ProductDetail'));
 const Stock = lazy(() => import('../pages/Stock'));
 const Collections = lazy(() => import('../pages/Collections'));
 const Stats = lazy(() => import('../pages/Stats'));
@@ -39,6 +40,7 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<Dashboard />} />
         <Route path="orders" element={<Orders />} />
         <Route path="products" element={<Products />} />
+        <Route path="products/:id" element={<ProductDetail />} />
         <Route path="stock" element={<Stock />} />
         <Route path="collections" element={<Collections />} />
         <Route path="stats" element={<Stats />} />
