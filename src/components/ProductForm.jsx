@@ -4,10 +4,11 @@ import UploadArea from './UploadArea';
 import { collectionsService } from '../services/collections';
 
 export default function ProductForm({ initialData, onSubmit, onCancel, isLoading }) {
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
+  const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: initialData || {
       name: '',
       slug: '',
+      shortDescription: '',
       description: '',
       collection_id: '',
       category: '',
@@ -15,7 +16,51 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     }
   });
 
-  const [images, setImages] = useState(initialData?.product_images || initialData?.images || []);
+  const parseImages = (data) => {
+    if (!data) return [];
+    let rawImages = data.product_images || data.images || [];
+    if (typeof rawImages === 'string') {
+      try {
+        rawImages = JSON.parse(rawImages);
+      } catch {
+        return [];
+      }
+    }
+    if (!Array.isArray(rawImages)) return [];
+
+    return rawImages.map((img, idx) => {
+      if (typeof img === 'string') {
+        return {
+          id: Math.random().toString(36).substring(7),
+          url: img,
+          preview: img,
+          isMain: idx === 0
+        };
+      }
+      return {
+        id: img.id || Math.random().toString(36).substring(7),
+        url: img.image_url || img.url || img.preview,
+        preview: img.image_url || img.url || img.preview,
+        isMain: img.isMain !== undefined ? img.isMain : idx === 0,
+        ...img
+      };
+    });
+  };
+
+  const parseColors = (data) => {
+    if (!data || !data.colors) return [];
+    if (typeof data.colors === 'string') {
+      try {
+        const parsed = JSON.parse(data.colors);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(data.colors) ? data.colors : [];
+  };
+
+  const [images, setImages] = useState(() => parseImages(initialData));
   const [imagesChanged, setImagesChanged] = useState(false);
   const [collections, setCollections] = useState([]);
   
@@ -23,13 +68,43 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     'Preto', 'Branco', 'Vermelho', 'Azul', 'Verde',
     'Amarelo', 'Cinza', 'Rosa', 'Roxo'
   ];
-  const [selectedColors, setSelectedColors] = useState(initialData?.colors || []);
+  const [selectedColors, setSelectedColors] = useState(() => parseColors(initialData));
 
   useEffect(() => {
     collectionsService.getCollections().then(data => {
       setCollections(Array.isArray(data) ? data : (data.collections || []));
     }).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        name: initialData.name || '',
+        slug: initialData.slug || '',
+        shortDescription: initialData.shortDescription || '',
+        description: initialData.description || '',
+        collection_id: initialData.collection_id || (initialData.collection ? initialData.collection.id : ''),
+        category: initialData.category || '',
+        price: initialData.price ? String(initialData.price) : ''
+      });
+      setImages(parseImages(initialData));
+      setSelectedColors(parseColors(initialData));
+      setImagesChanged(false);
+    } else {
+      reset({
+        name: '',
+        slug: '',
+        shortDescription: '',
+        description: '',
+        collection_id: '',
+        category: '',
+        price: ''
+      });
+      setImages([]);
+      setSelectedColors([]);
+      setImagesChanged(false);
+    }
+  }, [initialData, reset]);
 
   const nameValue = watch('name');
 

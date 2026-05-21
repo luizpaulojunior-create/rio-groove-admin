@@ -88,9 +88,17 @@ export default function Products() {
       header: 'Estampa',
       accessor: 'name',
       render: (row) => {
+        let parsedImages = row.images;
+        if (typeof parsedImages === 'string') {
+          try { parsedImages = JSON.parse(parsedImages); } catch { parsedImages = []; }
+        }
+        if (!Array.isArray(parsedImages)) parsedImages = [];
+
         const imageUrl = row.image_url || 
           (row.product_images && row.product_images.length > 0 ? row.product_images[0].image_url : null) || 
-          (row.images && row.images.length > 0 ? (row.images.find(i => i.isMain)?.preview || row.images.find(i => i.isMain)?.url || row.images[0].url) : null);
+          (parsedImages.length > 0 ? (
+            typeof parsedImages[0] === 'string' ? parsedImages[0] : (parsedImages.find(i => i.isMain)?.preview || parsedImages.find(i => i.isMain)?.url || parsedImages[0].url || parsedImages[0].image_url)
+          ) : null);
         
         return (
         <div className="flex items-center gap-3">
@@ -117,15 +125,23 @@ export default function Products() {
     {
       header: 'Cores',
       accessor: 'colors',
-      render: (row) => (
-        <div className="flex gap-1 flex-wrap max-w-[120px]">
-          {row.colors && row.colors.length > 0 ? row.colors.map(color => (
-            <span key={color} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white whitespace-nowrap">
-              {color}
-            </span>
-          )) : <span className="text-[10px] text-[var(--color-text-muted)]">-</span>}
-        </div>
-      )
+      render: (row) => {
+        let colors = row.colors || [];
+        if (typeof colors === 'string') {
+          try { colors = JSON.parse(colors); } catch { colors = []; }
+        }
+        if (!Array.isArray(colors)) colors = [];
+
+        return (
+          <div className="flex gap-1 flex-wrap max-w-[120px]">
+            {colors.length > 0 ? colors.map(color => (
+              <span key={color} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white whitespace-nowrap">
+                {color}
+              </span>
+            )) : <span className="text-[10px] text-[var(--color-text-muted)]">-</span>}
+          </div>
+        );
+      }
     },
     {
       header: 'Preço',
@@ -143,14 +159,22 @@ export default function Products() {
       header: 'Cores Disponíveis',
       accessor: 'images',
       render: (row) => {
-        const images = row.product_images || row.images || [];
+        let images = row.product_images || row.images || [];
+        if (typeof images === 'string') {
+          try { images = JSON.parse(images); } catch { images = []; }
+        }
+        if (!Array.isArray(images)) images = [];
+
         return (
         <div className="flex -space-x-2">
-          {images.slice(0, 3).map((img, i) => (
-            <div key={i} className="w-8 h-8 rounded-full border-2 border-[var(--color-surface)] overflow-hidden bg-white">
-              <img src={normalizeImageUrl(img.image_url || img.preview || img.url)} alt="" className="w-full h-full object-cover" loading="lazy" width="32" height="32" />
-            </div>
-          ))}
+          {images.slice(0, 3).map((img, i) => {
+            const imgUrl = typeof img === 'string' ? img : (img.image_url || img.preview || img.url);
+            return (
+              <div key={i} className="w-8 h-8 rounded-full border-2 border-[var(--color-surface)] overflow-hidden bg-white">
+                <img src={normalizeImageUrl(imgUrl)} alt="" className="w-full h-full object-cover" loading="lazy" width="32" height="32" />
+              </div>
+            );
+          })}
           {images.length > 3 && (
             <div className="w-8 h-8 rounded-full border-2 border-[var(--color-surface)] bg-[#0D0D0D] flex items-center justify-center text-xs text-white">
               +{images.length - 3}
