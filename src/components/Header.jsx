@@ -10,15 +10,16 @@ export default function Header({ onMenuClick }) {
   const getPageTitle = () => {
     const path = location.pathname.split('/').pop();
     switch (path) {
-      case 'dashboard': return 'Dashboard';
+      case 'dashboard': return 'PAINEL ADMIN';
       case 'orders': return 'Pedidos';
       case 'products': return 'Produtos';
       case 'stock': return 'Estoque';
       case 'collections': return 'Coleções';
-      case 'shipping': return 'Melhor Envio';
-      case 'stats': return 'Estatísticas';
+      case 'customers': return 'Clientes';
+      case 'coupons': return 'Cupons';
+      case 'stats': return 'Relatórios';
       case 'settings': return 'Configurações';
-      default: return 'Painel Admin';
+      default: return 'PAINEL ADMIN';
     }
   };
 

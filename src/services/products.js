@@ -1,67 +1,94 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api';
+import api from '../lib/api';
+
+const normalizeArrayField = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map(item => String(item).trim()).filter(Boolean);
+  }
+  return String(value).split(',').map(item => item.trim()).filter(Boolean);
+};
+
+const normalizeProductPayload = (formData) => ({
+  ...formData,
+  tags: normalizeArrayField(formData.tags),
+  collections: normalizeArrayField(formData.collections),
+  images: normalizeArrayField(formData.images)
+});
 
 export const productsService = {
   async getProducts() {
-    const res = await fetch(`${API_URL}/products`).catch(() => {
-      throw new Error('Falha de conexão com o servidor. O backend está rodando localmente?');
-    });
-    if (!res.ok) throw new Error('Falha ao buscar produtos');
-    return res.json();
+    try {
+      const { data } = await api.get('/products');
+      return data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.message || 'Falha ao buscar produtos');
+    }
   },
 
   async getProduct(id) {
-    const res = await fetch(`${API_URL}/products/${id}`).catch(() => {
-      throw new Error('Falha de conexão com o servidor.');
-    });
-    if (!res.ok) throw new Error('Falha ao buscar produto');
-    return res.json();
+    try {
+      const { data } = await api.get(`/products/${id}`);
+      return data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.message || 'Falha ao buscar produto');
+    }
   },
 
   async createProduct(formData) {
     const isFormData = formData instanceof FormData;
-    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
-    
-    const res = await fetch(`${API_URL}/products`, {
-      method: 'POST',
-      headers,
-      body: isFormData ? formData : JSON.stringify(formData)
-    }).catch(() => {
-      throw new Error('Falha de conexão. Verifique se o backend está rodando na porta 3000.');
-    });
-    
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao criar produto no servidor');
+
+    if (isFormData) {
+      if (formData.has('tags')) {
+        const tags = normalizeArrayField(formData.get('tags'));
+        formData.set('tags', JSON.stringify(tags));
+      }
+      if (formData.has('collections')) {
+        const collections = normalizeArrayField(formData.get('collections'));
+        formData.set('collections', JSON.stringify(collections));
+      }
+      // We purposefully DO NOT stringify 'images' because it contains File objects
     }
-    return res.json();
+
+    const dataToSend = isFormData ? formData : normalizeProductPayload(formData);
+
+    try {
+      const { data } = await api.post('/products', dataToSend);
+      return data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao criar produto');
+    }
   },
 
   async updateProduct(id, formData) {
     const isFormData = formData instanceof FormData;
-    const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
 
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers,
-      body: isFormData ? formData : JSON.stringify(formData)
-    }).catch(() => {
-      throw new Error('Falha de conexão. Verifique se o backend está rodando na porta 3000.');
-    });
-    
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao atualizar produto no servidor');
+    if (isFormData) {
+      if (formData.has('tags')) {
+        const tags = normalizeArrayField(formData.get('tags'));
+        formData.set('tags', JSON.stringify(tags));
+      }
+      if (formData.has('collections')) {
+        const collections = normalizeArrayField(formData.get('collections'));
+        formData.set('collections', JSON.stringify(collections));
+      }
     }
-    return res.json();
+
+    const dataToSend = isFormData ? formData : normalizeProductPayload(formData);
+
+    try {
+      const { data } = await api.put(`/products/${id}`, dataToSend);
+      return data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao atualizar produto');
+    }
   },
 
   async deleteProduct(id) {
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE'
-    }).catch(() => {
-      throw new Error('Falha de conexão com o servidor.');
-    });
-    if (!res.ok) throw new Error('Falha ao deletar produto no servidor');
-    return true;
+    try {
+      const { data } = await api.delete(`/products/${id}`);
+      return data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao deletar produto');
+    }
   }
-}
+};

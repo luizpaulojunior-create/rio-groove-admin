@@ -38,20 +38,22 @@ export default function Dashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative h-[300px] rounded-[32px] overflow-hidden flex items-center px-8 md:px-16"
+        className="relative h-[240px] rounded-[32px] overflow-hidden flex items-center px-8 md:px-16 bg-[#0D0D0D] border border-white/5 shadow-[0_0_40px_rgba(255,77,0,0.05)]"
       >
-        <div 
-          className="absolute inset-0 bg-cover bg-center z-0"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop)' }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/30 z-10" />
-        
-        <div className="relative z-20">
-          <h1 className="font-heading text-6xl md:text-8xl tracking-wider leading-none">
-            <span className="block text-white">PAINEL</span>
-            <span className="block text-white">RIO GROOVE</span>
-            <span className="block text-[var(--color-primary)] text-glow">ADMIN</span>
+        <div className="relative z-20 w-full md:w-1/2">
+          <h1 className="font-heading text-5xl md:text-7xl tracking-wider leading-none text-white mb-4">
+            PAINEL ADMIN
           </h1>
+          <p className="text-[var(--color-text-muted)] font-sans text-lg md:text-xl max-w-md">
+            Gerencie sua loja, produtos, pedidos e impulsione o movimento.
+          </p>
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 w-1/2 flex justify-end items-center p-8 z-10 opacity-30 md:opacity-100">
+          <img 
+            src="/onda.svg" 
+            alt="Gráfico de Ondas Rio Groove" 
+            className="w-full h-full object-contain" 
+          />
         </div>
       </motion.div>
 

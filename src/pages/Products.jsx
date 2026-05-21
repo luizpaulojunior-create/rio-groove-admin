@@ -77,7 +77,7 @@ export default function Products() {
         formData.images.forEach(img => {
           if (img.file) {
             payload.append('images', img.file);
-          } else if (img.url) {
+          } else if (img.url || img.image_url || img.preview) {
             payload.append('existing_images', JSON.stringify(img));
           }
         });

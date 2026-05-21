@@ -75,12 +75,15 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
             </div>
             
             <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Slug (URL) *</label>
-              <input
-                {...register('slug', { required: 'Slug é obrigatório' })}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="ex-ze-pilintra"
-              />
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">URL do Produto *</label>
+              <div className="flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden focus-within:border-[var(--color-primary)] transition-all duration-300 h-12">
+                <span className="text-[var(--color-text-muted)] pl-5 pr-1 text-sm select-none">/produto/</span>
+                <input
+                  {...register('slug', { required: 'URL do produto é obrigatória' })}
+                  className="w-full bg-transparent text-white focus:outline-none h-full pr-5 text-sm"
+                  placeholder="nome-do-produto"
+                />
+              </div>
               {errors.slug && <span className="text-red-500 text-xs mt-1 block">{errors.slug.message}</span>}
             </div>
           </div>
@@ -106,24 +109,35 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção (Opcional)</label>
               <select
                 {...register('collection_id')}
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
               >
-                <option value="">Selecione uma coleção...</option>
+                <option value="">Nenhuma coleção</option>
                 {collections.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria</label>
-              <input
-                {...register('category')}
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria *</label>
+              <select
+                {...register('category', { required: 'Categoria é obrigatória' })}
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="Ex: Camisetas"
-              />
+              >
+                <option value="">Selecione uma categoria...</option>
+                <option value="Camisetas">Camisetas</option>
+                <option value="Camisas">Camisas</option>
+                <option value="Casacos">Casacos</option>
+                <option value="Bermudas">Bermudas</option>
+                <option value="Canecas">Canecas</option>
+                <option value="Instrumentos">Instrumentos</option>
+                <option value="Sublimação">Sublimação</option>
+                <option value="Acessórios">Acessórios</option>
+                <option value="Produtos Digitais">Produtos Digitais</option>
+              </select>
+              {errors.category && <span className="text-red-500 text-xs mt-1 block">{errors.category.message}</span>}
             </div>
             <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Tags (separadas por vírgula)</label>

@@ -7,15 +7,13 @@ import {
   Package, 
   Boxes, 
   Layers, 
-  Truck, 
   BarChart3, 
   Settings,
   Megaphone,
-  BookOpen,
+  Mail,
   Users,
-  Star,
-  HeartHandshake,
-  Award,
+  Search,
+  Ticket,
   X
 } from 'lucide-react';
 
@@ -25,16 +23,16 @@ const menuItems = [
   { path: '/admin/products', name: 'Produtos', icon: Package },
   { path: '/admin/stock', name: 'Estoque', icon: Boxes },
   { path: '/admin/collections', name: 'Coleções', icon: Layers },
-  { path: '/admin/stats', name: 'Estatísticas', icon: BarChart3 },
+  { path: '/admin/customers', name: 'Clientes', icon: Users },
+  { path: '/admin/coupons', name: 'Cupons', icon: Ticket },
+  { path: '/admin/stats', name: 'Relatórios', icon: BarChart3 },
 ];
 
 const growthItems = [
   { path: '/admin/campaigns', name: 'Campanhas', icon: Megaphone },
-  { path: '/admin/editorial', name: 'Editorial', icon: BookOpen },
-  { path: '/admin/community', name: 'Community', icon: Users },
-  { path: '/admin/creators', name: 'Creators', icon: Star },
-  { path: '/admin/crm', name: 'CRM', icon: HeartHandshake },
-  { path: '/admin/loyalty', name: 'Loyalty', icon: Award },
+  { path: '/admin/newsletter', name: 'Newsletter', icon: Mail },
+  { path: '/admin/affiliates', name: 'Afiliados', icon: Users },
+  { path: '/admin/seo', name: 'SEO', icon: Search },
 ];
 
 const settingsItem = { path: '/admin/settings', name: 'Configurações', icon: Settings };
@@ -84,7 +82,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
         {/* Growth & Branding */}
         <div className="space-y-2">
-          <p className="px-4 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Growth & Branding</p>
+          <p className="px-4 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Marketing & Growth</p>
           {growthItems.map((item) => (
             <NavLink
               key={item.path}
