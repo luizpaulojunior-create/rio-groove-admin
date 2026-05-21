@@ -60,6 +60,20 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     return Array.isArray(data.colors) ? data.colors : [];
   };
 
+  const parseFabricAppearances = (data) => {
+    const raw = data?.fabric_appearances || data?.fabricAppearances;
+    if (!raw) return [];
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(raw) ? raw : [];
+  };
+
   const [images, setImages] = useState(() => parseImages(initialData));
   const [imagesChanged, setImagesChanged] = useState(false);
   const [collections, setCollections] = useState([]);
@@ -69,6 +83,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     'Amarelo', 'Cinza', 'Rosa', 'Roxo'
   ];
   const [selectedColors, setSelectedColors] = useState(() => parseColors(initialData));
+  const [selectedFabricAppearances, setSelectedFabricAppearances] = useState(() => parseFabricAppearances(initialData));
 
   useEffect(() => {
     collectionsService.getCollections().then(data => {
@@ -89,6 +104,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       });
       setImages(parseImages(initialData));
       setSelectedColors(parseColors(initialData));
+      setSelectedFabricAppearances(parseFabricAppearances(initialData));
       setImagesChanged(false);
     } else {
       reset({
@@ -102,6 +118,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       });
       setImages([]);
       setSelectedColors([]);
+      setSelectedFabricAppearances([]);
       setImagesChanged(false);
     }
   }, [initialData, reset]);
@@ -122,7 +139,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   }, [nameValue, initialData, setValue]);
 
   const handleFormSubmit = (data) => {
-    const payload = { ...data, colors: selectedColors };
+    const payload = { ...data, colors: selectedColors, fabricAppearances: selectedFabricAppearances };
     
     if (!initialData || imagesChanged) {
       payload.images = images;
@@ -175,6 +192,32 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                 className="w-4 h-4 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
               <span className="text-sm text-white">{color}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Aparência da Malha */}
+      <div className="space-y-4">
+        <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
+          Aparência da Malha
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {['Liso', 'Estonado'].map(appearance => (
+            <label key={appearance} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-[rgba(255,255,255,0.05)] transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedFabricAppearances.includes(appearance)}
+                onChange={() => {
+                  if (selectedFabricAppearances.includes(appearance)) {
+                    setSelectedFabricAppearances(selectedFabricAppearances.filter(a => a !== appearance));
+                  } else {
+                    setSelectedFabricAppearances([...selectedFabricAppearances, appearance]);
+                  }
+                }}
+                className="w-4 h-4 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+              />
+              <span className="text-sm text-white">{appearance}</span>
             </label>
           ))}
         </div>

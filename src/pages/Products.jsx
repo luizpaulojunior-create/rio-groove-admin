@@ -123,6 +123,27 @@ export default function Products() {
     { header: 'Coleção', accessor: 'collection', render: (row) => row.collections?.name || row.collection || '-' },
     { header: 'Categoria', accessor: 'category', render: (row) => row.category || '-' },
     {
+      header: 'Malha',
+      accessor: 'fabric_appearances',
+      render: (row) => {
+        let fabrics = row.fabric_appearances || row.fabricAppearances || [];
+        if (typeof fabrics === 'string') {
+          try { fabrics = JSON.parse(fabrics); } catch { fabrics = []; }
+        }
+        if (!Array.isArray(fabrics)) fabrics = [];
+
+        return (
+          <div className="flex gap-1 flex-wrap max-w-[120px]">
+            {fabrics.length > 0 ? fabrics.map(fabric => (
+              <span key={fabric} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-white whitespace-nowrap">
+                {fabric}
+              </span>
+            )) : <span className="text-[10px] text-[var(--color-text-muted)]">-</span>}
+          </div>
+        );
+      }
+    },
+    {
       header: 'Cores',
       accessor: 'colors',
       render: (row) => {

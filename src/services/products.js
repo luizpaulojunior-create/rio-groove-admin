@@ -33,10 +33,14 @@ export const productsService = {
     const formData = new FormData();
     
     Object.keys(dataObj).forEach(key => {
-      if (key !== 'images' && key !== 'collections' && key !== 'colors') {
+      if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
     });
+
+    if (dataObj.fabricAppearances) {
+      formData.append('fabric_appearances', JSON.stringify(dataObj.fabricAppearances));
+    }
 
     if (dataObj.collections) {
       const collections = normalizeArrayField(dataObj.collections);
@@ -73,10 +77,14 @@ export const productsService = {
     const formData = new FormData();
     
     Object.keys(dataObj).forEach(key => {
-      if (key !== 'images' && key !== 'collections' && key !== 'colors') {
+      if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
     });
+
+    if (dataObj.fabricAppearances) {
+      formData.append('fabric_appearances', JSON.stringify(dataObj.fabricAppearances));
+    }
 
     if (dataObj.collections) {
       const collections = normalizeArrayField(dataObj.collections);
