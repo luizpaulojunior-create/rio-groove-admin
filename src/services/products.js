@@ -28,6 +28,16 @@ export const productsService = {
   },
 
   async createProduct(dataObj) {
+    const images = dataObj.images || [];
+    
+    console.log('IMAGES:', images);
+
+    images.forEach((image, index) => {
+      console.log('IMAGE', index, image);
+      console.log('FILE', image.file);
+      console.log('IS FILE', image.file instanceof File);
+    });
+
     const formData = new FormData();
     
     Object.keys(dataObj).forEach(key => {
@@ -45,20 +55,16 @@ export const productsService = {
       }
     }
 
-    if (dataObj.images && Array.isArray(dataObj.images)) {
-      dataObj.images.forEach(image => {
-        if (image.file instanceof File) {
-          formData.append('images', image.file);
-        } else if (image.url || image.image_url || image.preview) {
-          formData.append('existing_images', JSON.stringify(image));
-        }
-      });
-    }
+    images.forEach(image => {
+      if (image.file instanceof File) {
+        formData.append('images', image.file);
+      } else if (image.url || image.image_url || image.preview) {
+        formData.append('existing_images', JSON.stringify(image));
+      }
+    });
 
     try {
-      const { data } = await api.post('/products', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await api.post('/products', formData);
       return data;
     } catch (err) {
       throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao criar produto');
@@ -66,6 +72,16 @@ export const productsService = {
   },
 
   async updateProduct(id, dataObj) {
+    const images = dataObj.images || [];
+
+    console.log('IMAGES:', images);
+
+    images.forEach((image, index) => {
+      console.log('IMAGE', index, image);
+      console.log('FILE', image.file);
+      console.log('IS FILE', image.file instanceof File);
+    });
+
     const formData = new FormData();
     
     Object.keys(dataObj).forEach(key => {
@@ -83,20 +99,16 @@ export const productsService = {
       }
     }
 
-    if (dataObj.images && Array.isArray(dataObj.images)) {
-      dataObj.images.forEach(image => {
-        if (image.file instanceof File) {
-          formData.append('images', image.file);
-        } else if (image.url || image.image_url || image.preview) {
-          formData.append('existing_images', JSON.stringify(image));
-        }
-      });
-    }
+    images.forEach(image => {
+      if (image.file instanceof File) {
+        formData.append('images', image.file);
+      } else if (image.url || image.image_url || image.preview) {
+        formData.append('existing_images', JSON.stringify(image));
+      }
+    });
 
     try {
-      const { data } = await api.put(`/products/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await api.put(`/products/${id}`, formData);
       return data;
     } catch (err) {
       throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao atualizar produto');

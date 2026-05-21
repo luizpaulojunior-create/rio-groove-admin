@@ -17,6 +17,17 @@ api.interceptors.request.use(
     if (session?.access_token) {
       config.headers.Authorization = `Bearer ${session.access_token}`;
     }
+
+    // Auto-remove Content-Type para FormData para permitir que o browser adicione o boundary
+    if (config.data instanceof FormData) {
+      if (typeof config.headers.delete === 'function') {
+        config.headers.delete('Content-Type');
+        config.headers.delete('content-type');
+      } else {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    }
     
     return config;
   },
