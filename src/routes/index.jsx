@@ -12,8 +12,11 @@ const Stock = lazy(() => import('../pages/Stock'));
 const Collections = lazy(() => import('../pages/Collections'));
 const Stats = lazy(() => import('../pages/Stats'));
 const Settings = lazy(() => import('../pages/Settings'));
+const Customers = lazy(() => import('../pages/Customers'));
+const CustomerDetail = lazy(() => import('../pages/CustomerDetail'));
 
 // Novos Módulos de Growth
+const Storefront = lazy(() => import('../pages/Storefront'));
 const Campaigns = lazy(() => import('../pages/Campaigns'));
 const Editorial = lazy(() => import('../pages/Editorial'));
 const Community = lazy(() => import('../pages/Community'));
@@ -45,8 +48,11 @@ export default function AppRoutes() {
         <Route path="collections" element={<Collections />} />
         <Route path="stats" element={<Stats />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="customers/:id" element={<CustomerDetail />} />
         
         {/* Novas Rotas Growth */}
+        <Route path="storefront/*" element={<Storefront />} />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="editorial" element={<Editorial />} />
         <Route path="community" element={<Community />} />

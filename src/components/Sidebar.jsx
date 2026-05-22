@@ -14,7 +14,8 @@ import {
   Users,
   Search,
   Ticket,
-  X
+  X,
+  Layout
 } from 'lucide-react';
 
 const menuItems = [
@@ -29,6 +30,7 @@ const menuItems = [
 ];
 
 const growthItems = [
+  { path: '/admin/storefront', name: 'Storefront', icon: Layout },
   { path: '/admin/campaigns', name: 'Campanhas', icon: Megaphone },
   { path: '/admin/newsletter', name: 'Newsletter', icon: Mail },
   { path: '/admin/affiliates', name: 'Afiliados', icon: Users },

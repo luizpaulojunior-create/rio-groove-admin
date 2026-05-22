@@ -2,10 +2,15 @@ import { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { collectionsService } from '../services/collections';
+import { storageService } from '../services/storage';
+import { STORAGE_PATHS } from '../config/storage';
 import { toast } from 'react-toastify';
+import { Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function Collections() {
   const [collections, setCollections] = useState([]);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingCollection, setEditingCollection] = useState(null);
@@ -41,6 +46,11 @@ export default function Collections() {
     try {
       setIsSubmitting(true);
       const loadingToast = toast.loading('Salvando coleção...');
+
+      if (bannerFile) {
+        data.banner_url = await storageService.uploadFile(bannerFile, STORAGE_PATHS.COLLECTIONS);
+      }
+
       if (editingCollection) {
         await collectionsService.updateCollection(editingCollection.id, data);
       } else {
@@ -60,12 +70,24 @@ export default function Collections() {
 
   const handleEdit = (collection) => {
     setEditingCollection(collection);
+    setBannerFile(null);
+    setBannerPreview(collection.banner_url || null);
     setIsModalOpen(true);
   };
 
   const handleAdd = () => {
     setEditingCollection(null);
+    setBannerFile(null);
+    setBannerPreview(null);
     setIsModalOpen(true);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
   };
 
   const columns = [
@@ -122,6 +144,25 @@ export default function Collections() {
           <div>
             <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Descrição</label>
             <textarea name="description" defaultValue={editingCollection?.description} rows={4} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none" />
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Banner da Coleção</label>
+            <div className="relative group rounded-xl overflow-hidden border border-white/10 aspect-[3/1] bg-black/50">
+              {bannerPreview ? (
+                <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex items-center justify-center h-full text-white/20">
+                  <ImageIcon size={32} />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <label className="cursor-pointer bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#e64500]">
+                  <Upload size={16} /> Escolher Imagem
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={isSubmitting} />
+                </label>
+              </div>
+            </div>
           </div>
           
           <div className="pt-6 flex justify-end gap-3 border-t border-[var(--color-border)] mt-8">

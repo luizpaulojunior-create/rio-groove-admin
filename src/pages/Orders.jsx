@@ -426,27 +426,33 @@ if (
       )
     },
     {
-      header: <span className="font-sans uppercase tracking-wide font-semibold text-xs">STATUS DE PAGAMENTO</span>,
-      accessor: 'paymentStatus',
+      header: 'Status',
+      accessor: 'status',
       render: (row) => {
-        const rawStatus = String(row.payment_status || row.paymentStatus || row.status || '').toLowerCase().trim();
+        const rawStatus = getNormalizedStatus(row.status || row.payment_status || row.paymentStatus || '');
         
         let type = 'PENDENTE';
         let label = 'PENDENTE';
-        let subtext = 'Aguardando pagamento';
         
-        if (['paid', 'approved', 'pagamento_aprovado'].includes(rawStatus)) {
+        const aprovadoStatus = [
+          'paid', 'approved', 'pagamento_aprovado', 'estoque_reservado', 'aguardando_producao', 
+          'em_producao', 'producao_concluida', 'preparando_envio', 
+          'etiqueta_gerada', 'postado', 'em_transito', 'saiu_para_entrega', 
+          'entregue', 'processing', 'preparando', 'shipped', 'delivered'
+        ];
+        
+        const canceladoStatus = ['cancelled', 'rejected', 'refunded', 'cancelado'];
+        
+        if (aprovadoStatus.includes(rawStatus)) {
           type = 'PAGO';
           label = 'PAGO';
-          subtext = 'Pagamento aprovado';
-        } else if (['cancelled', 'rejected', 'refunded', 'cancelado'].includes(rawStatus)) {
+        } else if (canceladoStatus.includes(rawStatus)) {
           type = 'CANCELADO';
           label = 'CANCELADO';
-          subtext = 'Pagamento cancelado';
         }
         
         return (
-          <div className="flex flex-col gap-1.5 min-w-[150px]">
+          <div className="flex flex-col gap-1.5 min-w-[120px]">
             {type === 'PAGO' && (
               <div className="h-[32px] rounded-full px-3.5 w-fit flex items-center gap-1.5 bg-[#22C55E]/10 border border-[#22C55E]/20 shadow-[0_0_10px_rgba(34,197,94,0.15)]">
                 <CheckCircle2 size={14} className="text-[#22C55E]" />
@@ -465,7 +471,6 @@ if (
                 <span className="font-sans font-medium text-[12px] tracking-wide text-red-400">{label}</span>
               </div>
             )}
-            <span className="font-sans text-[11px] text-[var(--color-text-muted)] font-medium pl-2">{subtext}</span>
           </div>
         );
       }
@@ -478,11 +483,6 @@ if (
           {new Date(row.createdAt || row.date || new Date()).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
         </span>
       )
-    },
-    {
-      header: 'Status',
-      accessor: 'status',
-      render: (row) => getStatusBadge(row.status)
     },
     {
       header: 'Total',

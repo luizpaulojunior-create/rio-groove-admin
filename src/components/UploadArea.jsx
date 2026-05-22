@@ -68,6 +68,7 @@ export default function UploadArea({ images = [], onChange }) {
 
   // Drag to reorder - simple implementation
   const moveImage = (dragIndex, hoverIndex) => {
+    if (hoverIndex < 0 || hoverIndex >= images.length) return;
     const dragImage = images[dragIndex];
     const newImages = [...images];
     newImages.splice(dragIndex, 1);
@@ -129,9 +130,28 @@ export default function UploadArea({ images = [], onChange }) {
               
               {/* Overlays e Ações */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                <div className="flex justify-between items-start">
-                  <div className="cursor-grab active:cursor-grabbing p-1 bg-black/50 rounded text-white" title="Reordenar (arrastar)">
-                    <GripVertical size={16} />
+                <div className="flex justify-between items-start w-full">
+                  <div className="flex gap-1">
+                    {index > 0 && (
+                      <button 
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); moveImage(index, index - 1); }}
+                        className="p-1 bg-black/80 hover:bg-zinc-700 text-white rounded transition-colors"
+                        title="Mover para esquerda"
+                      >
+                        <span className="text-xs leading-none">◀</span>
+                      </button>
+                    )}
+                    {index < images.length - 1 && (
+                      <button 
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); moveImage(index, index + 1); }}
+                        className="p-1 bg-black/80 hover:bg-zinc-700 text-white rounded transition-colors"
+                        title="Mover para direita"
+                      >
+                        <span className="text-xs leading-none">▶</span>
+                      </button>
+                    )}
                   </div>
                   <button 
                     type="button"

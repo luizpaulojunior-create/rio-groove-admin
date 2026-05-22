@@ -24,6 +24,7 @@
     "react-router-dom": "^7.15.1",
     "react-spinners": "^0.17.0",
     "react-toastify": "^11.1.0",
+    "recharts": "^3.8.1",
     "yup": "^1.7.1"
   },
   "devDependencies": {
