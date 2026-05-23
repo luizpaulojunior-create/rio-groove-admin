@@ -4,18 +4,34 @@ import { STORAGE_BUCKET, STORAGE_PATHS } from '../config/storage'
 
 export const storageService = {
   async uploadFile(file, path) {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('bucket', STORAGE_BUCKET)
-    if (path) {
-      formData.append('path', path)
-    }
-
+    console.log('UPLOAD INITIATED', { file, path, STORAGE_BUCKET });
+    
     try {
-      const { data } = await api.post('/upload', formData)
-      return data.url
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = path ? `${path}/${fileName}` : fileName;
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('SUPABASE UPLOAD ERROR:', error);
+        throw error;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(filePath);
+
+      console.log('UPLOAD SUCCESS URL:', publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.message || 'Falha ao fazer upload')
+      console.error('UPLOAD ERROR:', err);
+      throw new Error(err.message || 'Falha ao fazer upload direto no Supabase');
     }
   },
 

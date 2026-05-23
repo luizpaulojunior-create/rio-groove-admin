@@ -65,23 +65,32 @@ export default function Campaigns() {
 
     try {
       setIsSubmitting(true);
+      console.log('SAVE CAMPAIGN INITIATED', data);
       const loadingToast = toast.loading('Salvando campanha...');
 
       if (bannerFile) {
+        console.log('UPLOADING CAMPAIGN BANNER', bannerFile);
         data.banner = await storageService.uploadFile(bannerFile, STORAGE_PATHS.CAMPAIGNS);
+        console.log('BANNER UPLOAD RESULT:', data.banner);
       }
+      
+      console.log('SAVE PAYLOAD:', data);
 
       if (editingCampaign && !editingCampaign.id.startsWith('mock')) {
-        const { error } = await supabase
+        const response = await supabase
           .from('campaigns')
           .update(data)
-          .eq('id', editingCampaign.id);
-        if (error) throw error;
+          .eq('id', editingCampaign.id)
+          .select();
+        console.log('SAVE RESPONSE (UPDATE):', response);
+        if (response.error) throw response.error;
       } else {
-        const { error } = await supabase
+        const response = await supabase
           .from('campaigns')
-          .insert([data]);
-        if (error) throw error;
+          .insert([data])
+          .select();
+        console.log('SAVE RESPONSE (INSERT):', response);
+        if (response.error) throw response.error;
       }
 
       toast.update(loadingToast, { render: 'Campanha salva com sucesso!', type: 'success', isLoading: false, autoClose: 3000 });

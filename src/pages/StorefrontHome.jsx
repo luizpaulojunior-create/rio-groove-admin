@@ -112,16 +112,21 @@ export default function StorefrontHome() {
   const handleSave = async () => {
     try {
       setSaving(true);
+      console.log('SAVE INITIATED', homeData);
       
       let finalDesktopUrl = homeData.hero_image_desktop;
       let finalMobileUrl = homeData.hero_image_mobile;
 
       if (desktopImageFile) {
+        console.log('UPLOADING DESKTOP IMAGE', desktopImageFile);
         finalDesktopUrl = await storageService.uploadFile(desktopImageFile, STORAGE_PATHS.HERO);
+        console.log('DESKTOP UPLOAD RESULT:', finalDesktopUrl);
       }
 
       if (mobileImageFile) {
+        console.log('UPLOADING MOBILE IMAGE', mobileImageFile);
         finalMobileUrl = await storageService.uploadFile(mobileImageFile, STORAGE_PATHS.HERO);
+        console.log('MOBILE UPLOAD RESULT:', finalMobileUrl);
       }
 
       const titleParts = (homeData.hero_title || '').split(' ');
@@ -144,6 +149,10 @@ export default function StorefrontHome() {
         autoplay_interval: 5000
       };
 
+      // Atualizar explicitamente
+      heroContent.slides[0].image_url = finalDesktopUrl;
+      heroContent.slides[0].image_url_mobile = finalMobileUrl;
+
       const heroPayload = {
         type: 'hero',
         content: heroContent,
@@ -152,12 +161,19 @@ export default function StorefrontHome() {
         updated_at: new Date().toISOString()
       };
 
+      console.log('FINAL HERO PAYLOAD', JSON.stringify(heroPayload, null, 2));
+
       let heroResult;
       if (homeData.hero_id) {
         heroResult = await supabase
           .from('storefront_sections')
           .update(heroPayload)
-          .eq('id', homeData.hero_id);
+          .eq('id', homeData.hero_id)
+          .select();
+          
+        if (heroResult.data && heroResult.data.length === 0) {
+          throw new Error('Bloqueado pelo banco de dados (RLS). Execute o arquivo 00_CORRECAO_BANCO_DE_DADOS.sql no Supabase.');
+        }
       } else {
         heroResult = await supabase
           .from('storefront_sections')
@@ -169,6 +185,8 @@ export default function StorefrontHome() {
           setHomeData(prev => ({ ...prev, hero_id: heroResult.data.id }));
         }
       }
+
+      console.log('SAVE RESPONSE:', heroResult);
 
       if (heroResult?.error) throw heroResult.error;
 
@@ -186,7 +204,8 @@ export default function StorefrontHome() {
           await supabase
             .from('storefront_sections')
             .update({ order_index: orderIndex })
-            .eq('id', existingSection.id);
+            .eq('id', existingSection.id)
+            .select();
         } else {
           // Criar se não existir
           await supabase

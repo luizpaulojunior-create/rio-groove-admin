@@ -4,16 +4,19 @@ function normalizeStock(item) {
   if (!item) return null;
   return {
     id: item.id,
-    color: item.color || '',
+    sku: item.sku || '',
+    category: item.category || '',
+    model: item.model || '',
+    color_key: item.color_key || '',
+    color_label: item.color_label || '',
+    color_hex: item.color_hex || '',
     size: item.size || '',
-    quantity: Number(item.quantity) || 0,
-    minStock: Number(item.minStock || item.min_stock) || 0,
-    supplier: item.supplier || '',
+    stock: Number(item.stock) || 0,
+    min_stock: Number(item.min_stock) || 0,
     cost: Number(item.cost) || 0,
-    width: Number(item.width) || 0,
-    height: Number(item.height) || 0,
-    status: item.status || (Number(item.quantity) === 0 ? 'sem estoque' : (Number(item.quantity) <= Number(item.minStock || item.min_stock) ? 'baixo estoque' : 'disponível')),
-    updatedAt: item.updatedAt || item.updated_at || item.created_at || new Date().toISOString()
+    active: item.active !== false,
+    status: item.active === false ? 'inativo' : (Number(item.stock) === 0 ? 'sem estoque' : (Number(item.stock) <= Number(item.min_stock) ? 'baixo estoque' : 'disponível')),
+    updatedAt: item.updated_at || item.created_at || new Date().toISOString()
   };
 }
 
@@ -32,31 +35,11 @@ export const stockService = {
     return normalizeStock(data);
   },
   async createStockItem(stockData) {
-    const payload = {
-      color: stockData.color,
-      size: stockData.size,
-      quantity: stockData.quantity,
-      min_stock: stockData.minStock,
-      supplier: stockData.supplier,
-      cost: stockData.cost,
-      width: stockData.width,
-      height: stockData.height,
-    };
-    const { data } = await api.post('/stock', payload);
+    const { data } = await api.post('/stock', stockData);
     return normalizeStock(data);
   },
   async updateStockItem(id, stockData) {
-    const payload = {
-      color: stockData.color,
-      size: stockData.size,
-      quantity: stockData.quantity,
-      min_stock: stockData.minStock,
-      supplier: stockData.supplier,
-      cost: stockData.cost,
-      width: stockData.width,
-      height: stockData.height,
-    };
-    const { data } = await api.put(`/stock/${id}`, payload);
+    const { data } = await api.put(`/stock/${id}`, stockData);
     return normalizeStock(data);
   },
   async deleteStockItem(id) {
@@ -66,5 +49,9 @@ export const stockService = {
   async adjustStock(id, quantity, reason) {
     const { data } = await api.post(`/stock/${id}/adjust`, { quantity, reason });
     return normalizeStock(data);
+  },
+  async seedStockItems() {
+    const { data } = await api.post('/stock/seed');
+    return data;
   }
 };

@@ -4,6 +4,8 @@ import { normalizeImageUrl } from '../utils/imageUtils';
 
 export default function UploadArea({ images = [], onChange }) {
   const [dragActive, setDragActive] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [bulkColor, setBulkColor] = useState('');
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -18,16 +20,32 @@ export default function UploadArea({ images = [], onChange }) {
   const processFiles = (files) => {
     if (!files || files.length === 0) return;
     
-    const newImages = Array.from(files).map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      id: Math.random().toString(36).substr(2, 9),
-      isMain: images.length === 0 // first image becomes main automatically
-    }));
+    const newImages = Array.from(files).map(file => {
+      // Auto-detect color from filename (e.g. ze-pilintra-red-01.png)
+      let autoColor = '';
+      const nameParts = file.name.split('-');
+      const colorCodes = ['red', 'blk', 'wht', 'gre', 'silv', 'off', 'blue', 'grn', 'brn', 'bge'];
+      for (const part of nameParts) {
+        const cleanPart = part.split('.')[0].toLowerCase();
+        if (colorCodes.includes(cleanPart)) {
+          autoColor = cleanPart;
+          break;
+        }
+      }
+
+      return {
+        file,
+        preview: URL.createObjectURL(file),
+        id: Math.random().toString(36).substr(2, 9),
+        isMain: images.length === 0, // first image becomes main automatically
+        color_key: autoColor,
+        position: images.length
+      };
+    });
 
     // Se já havia uma imagem principal, não definir a nova como principal, a menos que a lista estivesse vazia
     if (images.length > 0 && newImages.length > 0) {
-      newImages[0].isMain = false; 
+      newImages.forEach(img => img.isMain = false);
     }
 
     onChange([...images, ...newImages]);
@@ -76,8 +94,65 @@ export default function UploadArea({ images = [], onChange }) {
     onChange(newImages);
   };
 
+  const toggleSelectImage = (id) => {
+    setSelectedImages(prev => 
+      prev.includes(id) ? prev.filter(imgId => imgId !== id) : [...prev, id]
+    );
+  };
+
+  const applyBulkColor = () => {
+    if (!bulkColor || selectedImages.length === 0) return;
+    const updated = images.map(img => 
+      selectedImages.includes(img.id) ? { ...img, color_key: bulkColor } : img
+    );
+    onChange(updated);
+    setSelectedImages([]); // clear selection after apply
+    setBulkColor('');
+  };
+
+  const COLORS_OPTIONS = [
+    { label: 'Red', value: 'red' },
+    { label: 'Black', value: 'blk' },
+    { label: 'White', value: 'wht' },
+    { label: 'Grey', value: 'gre' },
+    { label: 'Silver', value: 'silv' },
+    { label: 'Off White', value: 'off' },
+    { label: 'Blue', value: 'blue' },
+    { label: 'Green', value: 'grn' },
+    { label: 'Brown', value: 'brn' },
+    { label: 'Beige', value: 'bge' }
+  ];
+
   return (
     <div className="space-y-4">
+      {/* Bulk Assign Bar */}
+      {images.length > 0 && (
+        <div className="flex items-center gap-4 bg-[var(--color-surface)] p-3 rounded-xl border border-[var(--color-border)]">
+          <div className="text-sm text-white">
+            <span className="font-bold">{selectedImages.length}</span> selecionadas
+          </div>
+          <select 
+            value={bulkColor}
+            onChange={e => setBulkColor(e.target.value)}
+            disabled={selectedImages.length === 0}
+            className="bg-[#0D0D0D] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[var(--color-primary)] disabled:opacity-50"
+          >
+            <option value="">Selecione uma cor...</option>
+            {COLORS_OPTIONS.map(c => (
+              <option key={c.value} value={c.value}>{c.label} ({c.value})</option>
+            ))}
+          </select>
+          <button 
+            type="button"
+            onClick={applyBulkColor}
+            disabled={!bulkColor || selectedImages.length === 0}
+            className="px-4 py-1.5 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors"
+          >
+            Aplicar Cor em Lote
+          </button>
+        </div>
+      )}
+
       {/* Dropzone */}
       <div 
         className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
@@ -127,11 +202,28 @@ export default function UploadArea({ images = [], onChange }) {
                 width="96"
                 height="96"
               />
+
+              {/* Color Badge */}
+              {img.color_key && (
+                <div className="absolute top-2 left-2 bg-black/80 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">
+                  {img.color_key}
+                </div>
+              )}
+
+              {/* Checkbox for Bulk Select */}
+              <div className="absolute top-2 right-2 z-10">
+                <input 
+                  type="checkbox"
+                  checked={selectedImages.includes(img.id)}
+                  onChange={() => toggleSelectImage(img.id)}
+                  className="w-5 h-5 cursor-pointer accent-[var(--color-primary)]"
+                />
+              </div>
               
               {/* Overlays e Ações */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                <div className="flex justify-between items-start w-full">
-                  <div className="flex gap-1">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 pointer-events-none">
+                <div className="flex justify-between items-start w-full pointer-events-auto absolute top-2 left-2 right-2">
+                  <div className="flex gap-1 mt-8">
                     {index > 0 && (
                       <button 
                         type="button"
@@ -156,13 +248,13 @@ export default function UploadArea({ images = [], onChange }) {
                   <button 
                     type="button"
                     onClick={() => removeImage(img.id)}
-                    className="p-1 bg-red-500/80 hover:bg-red-500 text-white rounded transition-colors"
+                    className="p-1 bg-red-500/80 hover:bg-red-500 text-white rounded transition-colors mt-8"
                   >
                     <X size={16} />
                   </button>
                 </div>
                 
-                <div className="flex justify-center">
+                <div className="flex justify-center pointer-events-auto mb-2">
                   {!img.isMain && (
                     <button 
                       type="button"

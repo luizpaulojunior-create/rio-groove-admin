@@ -40,3 +40,25 @@ CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 -- 5. Update existing products and collections to active=true just in case
 UPDATE collections SET active = true WHERE active IS NULL;
 UPDATE products SET active = true WHERE active IS NULL;
+
+-- 6. Create stock_items table for new master stock architecture
+CREATE TABLE IF NOT EXISTS stock_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category TEXT NOT NULL,
+    model TEXT NOT NULL,
+    color_key TEXT NOT NULL,
+    color_label TEXT NOT NULL,
+    color_hex TEXT NOT NULL,
+    size TEXT NOT NULL,
+    cost NUMERIC NOT NULL,
+    stock INTEGER NOT NULL,
+    min_stock INTEGER NOT NULL,
+    sku TEXT UNIQUE NOT NULL,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    UNIQUE(model, color_key, size)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_items_sku ON stock_items(sku);
+CREATE INDEX IF NOT EXISTS idx_stock_items_category_model ON stock_items(category, model);
