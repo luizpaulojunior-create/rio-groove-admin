@@ -1,3 +1,8 @@
+/**
+ * Supabase anon client — uso permitido: autenticação admin, CMS storefront, campanhas.
+ * Dados operacionais (produtos/pedidos/estoque) devem passar por src/lib/api.js → backend.
+ * Ver ARCHITECTURE.md (Fase 1).
+ */
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

@@ -1,3 +1,8 @@
+/**
+ * Cliente HTTP oficial do admin para dados operacionais (produtos, pedidos, estoque, coleções).
+ * Fonte de dados: rio-groove-backend (ver API_CONTRACTS.md na raiz do projeto).
+ * CMS/auth continuam via Supabase direto — ver src/lib/supabase.js e ARCHITECTURE.md.
+ */
 import axios from 'axios';
 import { supabase } from './supabase';
 
@@ -55,6 +60,11 @@ api.interceptors.response.use(
       return api(originalRequest);
     }
 
+    if (error.response?.status === 403) {
+      console.error('[API Error] Acesso negado (403)', error.response?.data?.message);
+      return Promise.reject(error);
+    }
+
     // Se o erro for 401 (Não autorizado) e não for uma tentativa de refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -64,9 +74,8 @@ api.interceptors.response.use(
         const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !session) {
-          // Se falhar o refresh, deslogar o usuário (ou lidar conforme necessidade)
           await supabase.auth.signOut();
-          window.location.href = '/login';
+          window.location.href = '/admin/login';
           return Promise.reject(refreshError || error);
         }
 

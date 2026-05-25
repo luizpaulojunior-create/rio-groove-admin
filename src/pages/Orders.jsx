@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { 
@@ -56,17 +56,8 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [orders, statusFilter, dateFilter]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = async (showLoading = true) => {
     try {
-      setLoading(true);
       const data = await ordersService.getOrders();
       setOrders(data || []);
     } catch (error) {
@@ -77,7 +68,7 @@ export default function Orders() {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
 let result = [];
 
 if (
@@ -113,7 +104,15 @@ if (
     }
 
     setFilteredOrders(result);
-  };
+  }, [orders, statusFilter, dateFilter]);
+
+  useEffect(() => {
+    fetchOrders(false);
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const getNormalizedStatus = (status) => STATUS_MAP[status] || status;
 
@@ -166,15 +165,15 @@ if (
     setManualTrackingCode(order.trackingCode || order.tracking_code || '');
     setIsModalOpen(true);
 
-    // Tracking Automático: Polling silencioso ao abrir o pedido
+    // Tracking automático ao abrir pedido (referência = id do pedido, não código de rastreio)
     const norm = getNormalizedStatus(order.timelineStep || order.status);
-    const code = order.trackingCode || order.tracking_code;
 
-    if (code && !['entregue', 'cancelado'].includes(norm)) {
+    if (order.id && !['entregue', 'cancelado'].includes(norm)) {
       try {
-        const tracking = await shippingService.trackShipment(code);
-        if (tracking && tracking.status && tracking.status !== norm) {
-          await updateOrderStatus(order.id, tracking.status, `Rastreamento atualizado automaticamente: ${tracking.status}`);
+        const tracking = await shippingService.trackShipment(order.id);
+        const shippingStatus = tracking?.shipping_status;
+        if (shippingStatus && shippingStatus !== norm) {
+          await updateOrderStatus(order.id, shippingStatus, `Rastreamento atualizado automaticamente: ${shippingStatus}`);
         }
       } catch (error) {
         console.log('Polling de rastreio falhou ou indisponível', error);

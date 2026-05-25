@@ -1,44 +1,39 @@
 import api from '../lib/api';
 
+/** Base da API sem sufixo /api — usado para OAuth Melhor Envio (redirect browser). */
+export function getBackendRootUrl() {
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api';
+  return apiUrl.replace(/\/api\/?$/, '');
+}
+
+/**
+ * Contratos alinhados ao backend real (Fase 2).
+ * Removidas rotas fantasmas: /shipping/shipments, /shipping/oauth-url, etc.
+ */
 export const shippingService = {
-  async getShipments() {
-    const { data } = await api.get('/shipping/shipments');
-    return data;
-  },
-  async getShipment(id) {
-    const { data } = await api.get(`/shipping/shipments/${id}`);
-    return data;
-  },
   async calculateQuote(payload) {
     const { data } = await api.post('/shipping/quote', payload);
     return data;
   },
-  async generateLabel(orderId) {
-    const { data } = await api.post(`/shipping/label/${orderId}`);
+
+  async purchaseShipping(orderReference) {
+    const { data } = await api.post('/shipping/purchase', { reference: orderReference });
     return data;
   },
-  async printLabel(orderIds) {
-    const { data } = await api.post('/shipping/label/print', { orderIds });
+
+  async generateLabel(orderReference) {
+    const { data } = await api.post('/shipping/label', { reference: orderReference });
     return data;
   },
-  async cancelLabel(orderId) {
-    const { data } = await api.post(`/shipping/label/${orderId}/cancel`);
+
+  /** orderReference = id, order_number ou external_reference do pedido */
+  async trackShipment(orderReference) {
+    const { data } = await api.get(`/shipping/tracking/${encodeURIComponent(orderReference)}`);
     return data;
   },
-  async trackShipment(trackingCode) {
-    const { data } = await api.get(`/shipping/track/${trackingCode}`);
-    return data;
+
+  /** URL de OAuth Melhor Envio — GET /auth/melhor-envio/login (redirect browser) */
+  getMelhorEnvioLoginUrl() {
+    return `${getBackendRootUrl()}/auth/melhor-envio/login`;
   },
-  async getOAuthUrl() {
-    const { data } = await api.get('/shipping/oauth-url');
-    return data;
-  },
-  async handleOAuthCallback(code) {
-    const { data } = await api.post('/shipping/oauth-callback', { code });
-    return data;
-  },
-  async getConnectionStatus() {
-    const { data } = await api.get('/shipping/status');
-    return data;
-  }
 };
