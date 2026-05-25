@@ -86,6 +86,25 @@ export default function StorefrontHeader() {
         id: headerId,
       });
 
+      // Sincroniza logo no branding.assets para fonte única operacional
+      if (headerData.logo_url) {
+        const brandingSection = await fetchStorefrontSection(STOREFRONT_SECTION_KEYS.BRANDING);
+        if (brandingSection) {
+          await saveStorefrontSection({
+            sectionKey: STOREFRONT_SECTION_KEYS.BRANDING,
+            type: brandingSection.type || 'branding',
+            content: {
+              ...brandingSection.content,
+              assets: {
+                ...(brandingSection.content?.assets || {}),
+                logo_url: headerData.logo_url,
+              },
+            },
+            id: brandingSection.id,
+          });
+        }
+      }
+
       if (!headerId) {
         setHeaderId(saved.id);
       }

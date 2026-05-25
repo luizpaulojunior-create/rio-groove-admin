@@ -127,6 +127,23 @@ export default function StorefrontBranding() {
         id: brandingData.id,
       });
 
+      // Mantém header.logo_url sincronizado para consumo unificado na storefront
+      const headerSection = await fetchStorefrontSection(STOREFRONT_SECTION_KEYS.HEADER);
+      await saveStorefrontSection({
+        sectionKey: STOREFRONT_SECTION_KEYS.HEADER,
+        type: headerSection?.type || 'header_config',
+        content: {
+          ...(headerSection?.content || {
+            sticky: true,
+            transparent_on_top: true,
+            height: '80',
+            alignment: 'center',
+          }),
+          logo_url: finalLogoUrl,
+        },
+        id: headerSection?.id || null,
+      });
+
       setBrandingData((prev) => ({
         ...prev,
         id: saved.id,
