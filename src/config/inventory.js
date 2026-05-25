@@ -41,6 +41,8 @@ export const MODELS_BY_GENDER = {
 export const MODELS_REGATA = ['Regular', 'Machão'];
 export const MODELS_BONE = ['Trucker', 'Dad Hat', 'Snapback'];
 export const MODEL_CANECA = '330ml';
+export const MATERIAL_CANECA = 'Porcelana';
+export const VALID_CANECA_SKU = 'MUG-330-WHT-U';
 
 export const FABRICS = [
   'Lisa',
@@ -84,14 +86,6 @@ const RELAXED_FIT_PREFIX_BY_GENDER = {
   'Feminino': 'RLF'
 };
 
-const CATEGORY_PREFIXES = {
-  'Camisa': 'CAM',
-  'Regata': 'RGT',
-  'Boné': 'CAP',
-  'Caneca': 'MUG',
-  'Acessório': 'ACC'
-};
-
 export const UNIT_COST_BY_CATEGORY = {
   'Camisa': 42,
   'Regata': 25,
@@ -106,23 +100,40 @@ export function normalizeCategory(category) {
 }
 
 export function categoryUsesGender(category) {
-  const cat = normalizeCategory(category);
-  return cat === 'Camisa' || cat === 'Acessório';
+  return normalizeCategory(category) === 'Camisa';
 }
 
 export function categoryUsesFabric(category) {
   const cat = normalizeCategory(category);
-  return cat === 'Camisa' || cat === 'Regata' || cat === 'Acessório';
+  return cat === 'Camisa' || cat === 'Regata';
+}
+
+export function categoryUsesMaterial(category) {
+  return normalizeCategory(category) === 'Caneca';
+}
+
+export function categoryHasSeedGrade(category) {
+  return ['Camisa', 'Regata', 'Boné', 'Caneca'].includes(normalizeCategory(category));
+}
+
+export function categoryAllowsManualCreate(category) {
+  return normalizeCategory(category) !== 'Acessório';
 }
 
 export function getModelsForCategory(category, gender) {
   const cat = normalizeCategory(category);
-  if (cat === 'Camisa' || cat === 'Acessório') {
+  if (cat === 'Camisa') {
     return MODELS_BY_GENDER[gender] || [];
   }
   if (cat === 'Regata') return MODELS_REGATA;
   if (cat === 'Boné') return MODELS_BONE;
   if (cat === 'Caneca') return [MODEL_CANECA];
+  if (cat === 'Acessório') return [];
+  return [];
+}
+
+export function getMaterialsForCategory(category) {
+  if (normalizeCategory(category) === 'Caneca') return [MATERIAL_CANECA];
   return [];
 }
 
@@ -151,7 +162,7 @@ export const generateSKU = (category, model, colorKey, size, fabric, gender) => 
   const cat = normalizeCategory(category);
 
   if (cat === 'Caneca') {
-    return `MUG-330-${String(colorKey || 'wht').toUpperCase()}-U`;
+    return VALID_CANECA_SKU;
   }
 
   if (cat === 'Boné') {
@@ -160,13 +171,7 @@ export const generateSKU = (category, model, colorKey, size, fabric, gender) => 
   }
 
   if (cat === 'Acessório') {
-    const parts = ['ACC'];
-    const modelPrefix = getModelPrefix(model, gender);
-    if (modelPrefix) parts.push(modelPrefix);
-    if (colorKey) parts.push(String(colorKey).toUpperCase());
-    parts.push('U');
-    if (fabric) parts.push(fabric === 'Estonada' ? 'EST' : 'LS');
-    return parts.join('-');
+    return null;
   }
 
   const parts = [];
@@ -174,8 +179,6 @@ export const generateSKU = (category, model, colorKey, size, fabric, gender) => 
 
   if (modelPrefix) {
     parts.push(modelPrefix);
-  } else if (CATEGORY_PREFIXES[cat]) {
-    parts.push(CATEGORY_PREFIXES[cat]);
   } else if (model) {
     parts.push(model.substring(0, 3).toUpperCase());
   } else {
@@ -208,7 +211,7 @@ export function getAllModelsForFilters() {
 }
 
 export function resolveGenderFromModel(model, storedGender) {
-  if (storedGender) return storedGender;
+  if (storedGender && storedGender !== GENDER_NEUTRAL) return storedGender;
   for (const [gender, models] of Object.entries(MODELS_BY_GENDER)) {
     if (models.includes(model)) return gender;
   }

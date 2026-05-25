@@ -5,10 +5,10 @@ import { toast } from 'react-toastify';
 import { Search, Plus, Edit, Trash2, ArrowRightLeft, Package, Copy, Check, FilterX, AlertTriangle, XCircle, CheckCircle2, Power, Eye } from 'lucide-react';
 import {
   CATEGORIES, GENDERS, FABRICS, COLORS, generateSKU,
-  categoryUsesGender, categoryUsesFabric,
-  getModelsForCategory, getColorsForCategory, getSizesForCategory,
+  categoryUsesGender, categoryUsesFabric, categoryUsesMaterial, categoryAllowsManualCreate,
+  getModelsForCategory, getColorsForCategory, getSizesForCategory, getMaterialsForCategory,
   getAllModelsForFilters, resolveGenderFromModel, normalizeCategory,
-  GENDER_NEUTRAL, FABRIC_NEUTRAL
+  GENDER_NEUTRAL, FABRIC_NEUTRAL, MATERIAL_CANECA
 } from '../config/inventory';
 
 const getGenderFromModel = (model, storedGender) => resolveGenderFromModel(model, storedGender);
@@ -155,7 +155,7 @@ export default function Stock() {
       const itemStatus = Number(item.quantity) === 0 ? 'ESGOTADO' : (Number(item.quantity) <= Number(item.min_stock) ? 'BAIXO' : 'DISPONÍVEL');
       const isActive = item.is_active !== false;
       
-      if (filterCategory && item.category !== filterCategory) return false;
+      if (filterCategory && normalizeCategory(item.category) !== filterCategory) return false;
       if (filterStatus && itemStatus !== filterStatus) return false;
       if (filterGender && itemGender !== filterGender) return false;
       if (filterFabric && itemFabric !== filterFabric) return false;
@@ -335,6 +335,11 @@ export default function Stock() {
     }
 
     const cat = normalizeCategory(category);
+
+    if (!editingItem && !categoryAllowsManualCreate(cat)) {
+      toast.error('Acessório ainda não possui grade operacional automática.');
+      return;
+    }
 
     const data = {
       category: cat,
@@ -855,6 +860,8 @@ export default function Stock() {
                     disabled
                     className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white opacity-50 cursor-not-allowed"
                   />
+                ) : formModels.length === 0 ? (
+                  <p className="text-xs text-amber-500/90 py-2">Sem grade operacional para esta categoria.</p>
                 ) : (
                   <select
                     name="model"
@@ -867,6 +874,20 @@ export default function Stock() {
                   </select>
                 )}
               </div>
+
+              {!editingItem && categoryUsesMaterial(formCategory) && (
+                <div>
+                  <label className="block text-[11px] font-medium text-[#aaa] mb-1">Material *</label>
+                  <select
+                    name="material"
+                    value={MATERIAL_CANECA}
+                    disabled
+                    className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white opacity-70 cursor-not-allowed appearance-none"
+                  >
+                    <option value={MATERIAL_CANECA}>{MATERIAL_CANECA}</option>
+                  </select>
+                </div>
+              )}
 
               {!editingItem && categoryUsesFabric(formCategory) && (
                 <div>
