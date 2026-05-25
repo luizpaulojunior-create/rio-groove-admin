@@ -15,6 +15,12 @@ export const GENDERS = [
   'Feminino'
 ];
 
+/** Persistido quando a categoria não usa gênero (coluna NOT NULL no DB). */
+export const GENDER_NEUTRAL = 'Unissex';
+
+/** Persistido quando a categoria não usa malha (coluna NOT NULL no DB). */
+export const FABRIC_NEUTRAL = 'N/A';
+
 export const MODELS_BY_GENDER = {
   'Masculino': [
     'Oversized Boxy',

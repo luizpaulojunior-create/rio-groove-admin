@@ -7,7 +7,8 @@ import {
   CATEGORIES, GENDERS, FABRICS, COLORS, generateSKU,
   categoryUsesGender, categoryUsesFabric,
   getModelsForCategory, getColorsForCategory, getSizesForCategory,
-  getAllModelsForFilters, resolveGenderFromModel, normalizeCategory
+  getAllModelsForFilters, resolveGenderFromModel, normalizeCategory,
+  GENDER_NEUTRAL, FABRIC_NEUTRAL
 } from '../config/inventory';
 
 const getGenderFromModel = (model, storedGender) => resolveGenderFromModel(model, storedGender);
@@ -337,8 +338,8 @@ export default function Stock() {
 
     const data = {
       category: cat,
-      gender: categoryUsesGender(cat) ? (editingItem?.gender || formGender) : null,
-      fabric: categoryUsesFabric(cat) ? (editingItem?.fabric || formFabric) : null,
+      gender: categoryUsesGender(cat) ? (editingItem?.gender || formGender) : GENDER_NEUTRAL,
+      fabric: categoryUsesFabric(cat) ? (editingItem?.fabric || formFabric) : FABRIC_NEUTRAL,
       model,
       color_key,
       color_label,
