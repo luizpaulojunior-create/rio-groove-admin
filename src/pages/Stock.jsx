@@ -4,7 +4,7 @@ import { stockService } from '../services/stock';
 import { toast } from 'react-toastify';
 import { Search, Plus, Edit, Trash2, ArrowRightLeft, Package, Copy, Check, FilterX, AlertTriangle, XCircle, CheckCircle2, Power, Eye } from 'lucide-react';
 import {
-  CATEGORIES, GENDERS, FABRICS, COLORS, generateSKU,
+  CATEGORIES, STOCK_FILTER_CATEGORIES, GENDERS, FABRICS, COLORS, generateSKU,
   categoryUsesGender, categoryUsesFabric, categoryUsesMaterial, categoryAllowsManualCreate,
   getModelsForCategory, getColorsForCategory, getSizesForCategory, getMaterialsForCategory,
   getAllModelsForFilters, resolveGenderFromModel, normalizeCategory,
@@ -469,7 +469,7 @@ export default function Stock() {
           
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="bg-[#111] border border-[#222] rounded px-2.5 h-8 text-xs text-[#aaa] hover:text-white focus:outline-none focus:border-[#444] appearance-none min-w-[110px] cursor-pointer">
             <option value="">Cat: Todas</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {STOCK_FILTER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 
           <select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="bg-[#111] border border-[#222] rounded px-2.5 h-8 text-xs text-[#aaa] hover:text-white focus:outline-none focus:border-[#444] appearance-none min-w-[110px] cursor-pointer">
@@ -565,7 +565,7 @@ export default function Stock() {
                         <td className="py-2.5 px-4 align-middle">
                           <div className="flex flex-col justify-center">
                             <span className="text-[12px] font-medium text-[#ddd]">{row.model}</span>
-                            <span className="text-[10px] text-[#777] mt-0.5">{row.category} • {getGenderFromModel(row.model)}</span>
+                            <span className="text-[10px] text-[#777] mt-0.5">{normalizeCategory(row.category)} • {getGenderFromModel(row.model)}</span>
                           </div>
                         </td>
 
@@ -827,7 +827,7 @@ export default function Stock() {
                   disabled={!!editingItem}
                   className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {STOCK_FILTER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
 

@@ -10,6 +10,9 @@ export const CATEGORIES = [
   'Acessório'
 ];
 
+/** Categorias exibidas nos filtros/menus de estoque (fonte única — sem Camiseta). */
+export const STOCK_FILTER_CATEGORIES = CATEGORIES;
+
 export const GENDERS = [
   'Masculino',
   'Feminino'
