@@ -6,9 +6,11 @@ export const STORAGE_BUCKET = 'product-images';
 
 export const STORAGE_PATHS = {
   HERO: 'storefront/hero',
+  HEADER: 'storefront/header',
+  BRANDING: 'storefront/branding',
   BANNERS: 'storefront/banners',
   EDITORIAL: 'storefront/editorial',
   CAMPAIGNS: 'campaigns',
   COLLECTIONS: 'collections',
-  PRODUCTS: 'products'
+  PRODUCTS: 'products',
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { customersService } from '../services/customers';
@@ -15,13 +15,8 @@ export default function CustomerDetail() {
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCustomer();
-  }, [id]);
-
-  const fetchCustomer = async () => {
+  const fetchCustomer = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
       const data = await customersService.getCustomerById(id);
       setCustomer(data);
     } catch (error) {
@@ -29,7 +24,11 @@ export default function CustomerDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchCustomer(false);
+  }, [fetchCustomer]);
 
   if (loading) {
     return (

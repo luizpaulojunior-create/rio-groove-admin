@@ -16,13 +16,8 @@ export default function Campaigns() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (showLoading = true) => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('campaigns')
         .select('*')
@@ -31,10 +26,8 @@ export default function Campaigns() {
       if (error) {
         if (error.code === '42P01') {
           console.warn('Tabela campaigns não existe. Execute o SQL primeiro.');
-          setCampaigns([
-            { id: 'mock-1', title: 'Black Friday Antecipada', slug: 'black-friday', active: true, start_date: new Date().toISOString(), coupon_code: 'BF20' },
-            { id: 'mock-2', title: 'Drop de Inverno', slug: 'inverno', active: false, start_date: null, coupon_code: 'WINTER' }
-          ]);
+          toast.error('Tabela campaigns não encontrada no Supabase.');
+          setCampaigns([]);
         } else {
           throw error;
         }
@@ -48,6 +41,10 @@ export default function Campaigns() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCampaigns(false);
+  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -76,7 +73,7 @@ export default function Campaigns() {
       
       console.log('SAVE PAYLOAD:', data);
 
-      if (editingCampaign && !editingCampaign.id.startsWith('mock')) {
+      if (editingCampaign) {
         const response = await supabase
           .from('campaigns')
           .update(data)
@@ -95,7 +92,7 @@ export default function Campaigns() {
 
       toast.update(loadingToast, { render: 'Campanha salva com sucesso!', type: 'success', isLoading: false, autoClose: 3000 });
       setIsModalOpen(false);
-      fetchCampaigns();
+      fetchCampaigns(false);
     } catch (error) {
       console.error('Erro ao salvar campanha:', error);
       toast.dismiss();
@@ -128,12 +125,6 @@ export default function Campaigns() {
   };
 
   const toggleStatus = async (id, currentStatus) => {
-    if (id.startsWith('mock')) {
-      toast.success(`Mock: Status da campanha atualizado`);
-      setCampaigns(campaigns.map(c => c.id === id ? { ...c, active: !currentStatus } : c));
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('campaigns')
@@ -142,7 +133,7 @@ export default function Campaigns() {
 
       if (error) throw error;
       toast.success('Status atualizado');
-      fetchCampaigns();
+      fetchCampaigns(false);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao atualizar');

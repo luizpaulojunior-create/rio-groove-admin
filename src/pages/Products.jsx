@@ -19,13 +19,8 @@ export default function Products() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = async (showLoading = true) => {
     try {
-      setLoading(true);
       const data = await productsService.getProducts();
       setProducts(data);
     } catch (error) {
@@ -35,6 +30,10 @@ export default function Products() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProducts(false);
+  }, []);
 
   const handleAdd = () => {
     setEditingProduct(null);
@@ -79,7 +78,7 @@ export default function Products() {
       
       toast.update(loadingToast, { render: editingProduct ? 'Estampa atualizada!' : 'Estampa criada!', type: 'success', isLoading: false, autoClose: 3000 });
       setIsModalOpen(false);
-      fetchProducts();
+      fetchProducts(false);
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
       toast.dismiss();
@@ -188,21 +187,21 @@ export default function Products() {
                 {paginatedProducts.length > 0 ? paginatedProducts.map((row) => {
                   const imageUrl = getProductImage(row);
                   
-                  let fabrics = parseJsonArray(row.fabric_appearances || row.fabricAppearances);
-                  fabrics = fabrics.filter(f => f !== 'offWhite' && f !== 'Off White');
+              let fabrics = parseJsonArray(row.fabric_appearances || row.fabricAppearances);
+              fabrics = fabrics.filter(f => f !== 'offWhite' && f !== 'Off White');
 
-                  let colors = parseJsonArray(row.colors);
-                  let originalFabrics = parseJsonArray(row.fabric_appearances || row.fabricAppearances);
-                  if (originalFabrics.includes('offWhite') || originalFabrics.includes('Off White')) {
-                    if (!colors.includes('Off White') && !colors.includes('offWhite')) {
-                      colors.push('Off White');
-                    }
-                  }
-                  colors = colors.map(c => c === 'offWhite' ? 'Off White' : c);
+              let colors = parseJsonArray(row.colors);
+              let originalFabrics = parseJsonArray(row.fabric_appearances || row.fabricAppearances);
+              if (originalFabrics.includes('offWhite') || originalFabrics.includes('Off White')) {
+                if (!colors.includes('Off White') && !colors.includes('offWhite')) {
+                  colors.push('Off White');
+                }
+              }
+              colors = colors.map(c => c === 'offWhite' ? 'Off White' : c);
 
-                  let dispImages = parseJsonArray(row.product_images || row.images);
+              let dispImages = parseJsonArray(row.product_images || row.images);
 
-                  return (
+              return (
                     <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="py-6 px-6 align-middle">
                         <div className="flex items-center gap-4">

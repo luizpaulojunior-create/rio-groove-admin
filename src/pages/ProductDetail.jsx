@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Edit, Tag, Package, LayoutGrid, CheckCircle, 
@@ -52,29 +52,7 @@ export default function ProductDetail() {
   const [movements, setMovements] = useState([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
 
-  useEffect(() => {
-    fetchProduct();
-  }, [id]);
-
-  const fetchProduct = async () => {
-    try {
-      setLoading(true);
-      const data = await productsService.getProduct(id);
-      setProduct(data);
-      
-      if (data?.product_variants?.length > 0) {
-        fetchMovements(data.product_variants.map(v => v.id));
-      }
-    } catch (error) {
-      console.error("Erro ao carregar produto:", error);
-      toast.error("Erro ao carregar produto.");
-      navigate('/admin/products');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMovements = async (variantIds) => {
+  const fetchMovements = useCallback(async (variantIds) => {
     try {
       setLoadingMovements(true);
       const { data, error } = await supabase
@@ -99,7 +77,28 @@ export default function ProductDetail() {
     } finally {
       setLoadingMovements(false);
     }
-  };
+  }, []);
+
+  const fetchProduct = useCallback(async (showLoading = true) => {
+    try {
+      const data = await productsService.getProduct(id);
+      setProduct(data);
+      
+      if (data?.product_variants?.length > 0) {
+        fetchMovements(data.product_variants.map(v => v.id));
+      }
+    } catch (error) {
+      console.error("Erro ao carregar produto:", error);
+      toast.error("Erro ao carregar produto.");
+      navigate('/admin/products');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, navigate, fetchMovements]);
+
+  useEffect(() => {
+    fetchProduct(false);
+  }, [fetchProduct]);
 
   const handleAdjustSubmit = async (e) => {
     e.preventDefault();
@@ -157,7 +156,7 @@ export default function ProductDetail() {
 
       toast.success('Estoque atualizado com sucesso!');
       setAdjustModalOpen(false);
-      fetchProduct();
+      fetchProduct(false);
     } catch (error) {
       console.error('Erro ao ajustar estoque:', error);
       toast.error('Erro ao atualizar estoque');
@@ -174,7 +173,7 @@ export default function ProductDetail() {
       await productsService.updateProduct(id, formData);
       toast.update(loadingToast, { render: 'Produto atualizado!', type: 'success', isLoading: false, autoClose: 3000 });
       setIsEditModalOpen(false);
-      fetchProduct(); 
+      fetchProduct(false); 
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
       toast.dismiss();
@@ -496,9 +495,9 @@ export default function ProductDetail() {
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-heading text-white flex items-center gap-2">
                   <LayoutGrid size={18} className="text-[#FF4D00]" />
-                  Variantes & Estoque
+                  Variantes (SKUs — legado)
                 </h3>
-                <span className="text-xs text-zinc-500">{product.product_variants.length} variações</span>
+                <span className="text-xs text-zinc-500">{product.product_variants.length} variações · estoque em Blanks</span>
               </div>
               
               <div className="space-y-4">
@@ -560,12 +559,10 @@ export default function ProductDetail() {
                       {/* Ações */}
                       <div className="flex items-center justify-end md:ml-4">
                         <button 
-                          onClick={() => {
-                            setSelectedVariant(variant);
-                            setAdjustForm({ type: 'add', quantity: 1, reason: 'manual_adjustment', notes: '' });
-                            setAdjustModalOpen(true);
-                          }}
-                          className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-zinc-400 hover:text-white hover:border-[#FF4D00] hover:bg-[#FF4D00]/10 transition-all text-sm font-medium"
+                          type="button"
+                          disabled
+                          title="Ajuste de estoque legado desativado. Use Estoque → Blanks."
+                          className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-zinc-600 cursor-not-allowed text-sm font-medium"
                         >
                           <RefreshCcw size={14} /> Ajustar
                         </button>

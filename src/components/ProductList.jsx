@@ -13,9 +13,8 @@ export default function ProductList() {
   const [editingProduct, setEditingProduct] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (showLoading = true) => {
     try {
-      setLoading(true)
       const data = await productsService.getProducts()
       setProducts(data || [])
     } catch (err) {
@@ -27,7 +26,7 @@ export default function ProductList() {
   }
 
   useEffect(() => {
-    fetchProducts()
+    fetchProducts(false)
   }, [])
 
   const handleAddNew = () => {
@@ -88,7 +87,7 @@ export default function ProductList() {
         await productsService.createProduct(payload)
       }
       
-      await fetchProducts()
+      await fetchProducts(false)
       setIsFormOpen(false)
     } catch (err) {
       alert(`Erro ao salvar produto: ${err.message}`)

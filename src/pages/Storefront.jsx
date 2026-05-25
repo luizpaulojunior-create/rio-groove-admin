@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { Home, Layout, Type, Image as ImageIcon, Smartphone, Globe, Settings } from 'lucide-react';
 import StorefrontHome from './StorefrontHome';
+import StorefrontHeader from './StorefrontHeader';
+import StorefrontNavigation from './StorefrontNavigation';
+import StorefrontBranding from './StorefrontBranding';
+import StorefrontLandingPages from './StorefrontLandingPages';
+
+function StorefrontComingSoon({ title }) {
+  return (
+    <div className="bg-[#0D0D0D] border border-white/5 rounded-3xl p-12 text-center">
+      <Smartphone className="w-12 h-12 text-white/20 mx-auto mb-4" />
+      <h3 className="text-xl font-heading text-white mb-2">{title}</h3>
+      <p className="text-[var(--color-text-muted)]">
+        Em breve — integração com a storefront v2 pendente.
+      </p>
+    </div>
+  );
+}
 
 export default function Storefront() {
   const location = useLocation();
@@ -13,7 +29,7 @@ export default function Storefront() {
     { path: '/admin/storefront/navigation', name: 'Navegação', icon: Globe },
     { path: '/admin/storefront/landing-pages', name: 'Landing Pages', icon: Type },
     { path: '/admin/storefront/branding', name: 'Branding', icon: ImageIcon },
-    { path: '/admin/storefront/mobile', name: 'Mobile Experience', icon: Smartphone },
+    { path: '/admin/storefront/mobile', name: 'Mobile Experience', icon: Smartphone, comingSoon: true },
   ];
 
   return (
@@ -38,7 +54,7 @@ export default function Storefront() {
                   key={tab.path}
                   to={tab.path}
                   className={`
-                    flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
+                    flex items-center gap-3 px-4 py-3 rounded-3xl transition-all duration-300
                     ${isActive 
                       ? 'bg-[#FF4D00]/10 text-[#FF4D00] font-medium border border-[#FF4D00]/20' 
                       : 'text-[var(--color-text-muted)] hover:bg-white/5 hover:text-white'
@@ -47,6 +63,11 @@ export default function Storefront() {
                 >
                   <tab.icon size={18} />
                   <span>{tab.name}</span>
+                  {tab.comingSoon && (
+                    <span className="ml-auto text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/5 text-white/40">
+                      Em breve
+                    </span>
+                  )}
                 </NavLink>
               );
             })}
@@ -58,6 +79,11 @@ export default function Storefront() {
           <Routes>
             <Route path="/" element={<Navigate to="home" replace />} />
             <Route path="home" element={<StorefrontHome />} />
+            <Route path="header" element={<StorefrontHeader />} />
+            <Route path="navigation" element={<StorefrontNavigation />} />
+            <Route path="landing-pages" element={<StorefrontLandingPages />} />
+            <Route path="branding" element={<StorefrontBranding />} />
+            <Route path="mobile" element={<StorefrontComingSoon title="Mobile Experience" />} />
             <Route path="*" element={
               <div className="bg-[#0D0D0D] border border-white/5 rounded-2xl p-12 text-center">
                 <Settings className="w-12 h-12 text-white/20 mx-auto mb-4" />

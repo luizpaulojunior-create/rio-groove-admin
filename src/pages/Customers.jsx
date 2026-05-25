@@ -11,13 +11,8 @@ export default function Customers() {
   const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (showLoading = true) => {
     try {
-      setLoading(true);
       const data = await customersService.getCustomers();
       setCustomers(data || []);
     } catch (error) {
@@ -27,6 +22,10 @@ export default function Customers() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCustomers(false);
+  }, []);
 
   const getStatusBadgeClass = (status) => {
     switch (status) {

@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import UploadArea from './UploadArea';
 import { collectionsService } from '../services/collections';
+import { CATEGORIES, SIZES, COLORS } from '../config/inventory';
+
+import { useWatch } from 'react-hook-form';
 
 export default function ProductForm({ initialData, onSubmit, onCancel, isLoading }) {
-  const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
+  const { register, handleSubmit, formState: { errors }, control, setValue, reset } = useForm({
         defaultValues: initialData || {
       name: '',
       slug: '',
@@ -58,7 +61,9 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         try {
           const parsed = JSON.parse(data.colors);
           colors = Array.isArray(parsed) ? parsed : [];
-        } catch {}
+        } catch (e) {
+          // ignore
+        }
       } else {
         colors = Array.isArray(data.colors) ? [...data.colors] : [];
       }
@@ -73,7 +78,9 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
           try {
             const parsed = JSON.parse(rawFabrics);
             fabrics = Array.isArray(parsed) ? parsed : [];
-          } catch {}
+          } catch (e) {
+            // ignore
+          }
         } else {
           fabrics = Array.isArray(rawFabrics) ? rawFabrics : [];
         }
@@ -98,7 +105,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       try {
         const parsed = JSON.parse(raw);
         fabrics = Array.isArray(parsed) ? parsed : [];
-      } catch {
+      } catch (e) {
         return [];
       }
     } else {
@@ -113,10 +120,8 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   const [imagesChanged, setImagesChanged] = useState(false);
   const [collections, setCollections] = useState([]);
   
-  const COLORS_LIST = [
-    'Preto', 'Branco', 'Off White', 'Bege', 'Vermelho', 'Azul', 'Verde',
-    'Amarelo', 'Cinza', 'Rosa', 'Roxo'
-  ];
+  const COLORS_LIST = COLORS.map(c => c.label);
+  
   const [selectedColors, setSelectedColors] = useState(() => parseColors(initialData));
   const [selectedFabricAppearances, setSelectedFabricAppearances] = useState(() => parseFabricAppearances(initialData));
   const [variants, setVariants] = useState(() => initialData?.product_variants || initialData?.variants || []);
@@ -169,7 +174,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     }
   }, [initialData, reset]);
 
-  const nameValue = watch('name');
+  const nameValue = useWatch({ control, name: 'name' });
 
   // Auto-generate slug from name if creating
   useEffect(() => {
@@ -345,15 +350,9 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
               >
                 <option value="">Selecione uma categoria...</option>
-                <option value="Camisetas">Camisetas</option>
-                <option value="Camisas">Camisas</option>
-                <option value="Casacos">Casacos</option>
-                <option value="Bermudas">Bermudas</option>
-                <option value="Canecas">Canecas</option>
-                <option value="Instrumentos">Instrumentos</option>
-                <option value="Sublimação">Sublimação</option>
-                <option value="Acessórios">Acessórios</option>
-                <option value="Produtos Digitais">Produtos Digitais</option>
+                {CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
               {errors.category && <span className="text-red-500 text-xs mt-1 block">{errors.category.message}</span>}
             </div>
@@ -397,7 +396,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
           </button>
         </div>
         <p className="text-sm text-[var(--color-text-muted)] mb-4">
-          Gerencie o estoque e SKUs por tamanho e cor. O estoque total será a soma das variações.
+          Referência comercial de SKU por cor e tamanho. Estoque oficial fica em <strong className="text-white/70">Estoque → Blanks</strong> (não editável aqui).
         </p>
 
         {variants.length > 0 ? (
@@ -408,7 +407,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                   <th className="pb-2 font-medium">Cor</th>
                   <th className="pb-2 font-medium">Tamanho</th>
                   <th className="pb-2 font-medium">SKU *</th>
-                  <th className="pb-2 font-medium">Estoque</th>
                   <th className="pb-2 font-medium">Preço (Opcional)</th>
                   <th className="pb-2 font-medium">Imagem (URL)</th>
                   <th className="pb-2 font-medium"></th>
@@ -443,7 +441,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                         }}
                         className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-primary)]"
                       >
-                        {['PP', 'P', 'M', 'G', 'GG', 'XG'].map(s => (
+                        {SIZES.map(s => (
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
@@ -458,19 +456,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                           setVariants(newV);
                         }}
                         placeholder="Ex: CAM-PRT-M"
-                        className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-primary)]"
-                      />
-                    </td>
-                    <td className="py-3 pr-2 min-w-[100px]">
-                      <input 
-                        type="number"
-                        min="0"
-                        value={v.stock}
-                        onChange={(e) => {
-                          const newV = [...variants];
-                          newV[index].stock = parseInt(e.target.value) || 0;
-                          setVariants(newV);
-                        }}
                         className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-primary)]"
                       />
                     </td>
