@@ -14,13 +14,8 @@ export default function Dashboard() {
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = async (showLoading = true) => {
     try {
-      setLoading(true);
       const [statsData, stockData, ordersData, chartResp, topProdResp] = await Promise.all([
         analyticsService.getDashboardStats().catch(() => ({})),
         stockService.getStock().catch(() => []),
@@ -56,7 +51,11 @@ export default function Dashboard() {
     }
   };
 
-  const lowStockItems = useMemo(() => stockItems.filter(i => Number(i.quantity) > 0 && Number(i.quantity) <= Number(i.minStock)), [stockItems]);
+  useEffect(() => {
+    fetchData(false);
+  }, []);
+
+  const lowStockItems = useMemo(() => stockItems.filter(i => Number(i.quantity) > 0 && Number(i.quantity) <= Number(i.min_stock)), [stockItems]);
   const outOfStockItems = useMemo(() => stockItems.filter(i => Number(i.quantity) === 0), [stockItems]);
   
   const pendingOrders = useMemo(() => orders.filter(o => o.status === 'aguardando_pagamento' || o.status === 'aguardando_producao' || o.status === 'em_producao' || o.status === 'pending_payment'), [orders]);

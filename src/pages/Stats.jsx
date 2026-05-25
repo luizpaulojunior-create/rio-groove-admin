@@ -6,11 +6,7 @@ export default function Stats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = async (showLoading = true) => {
     try {
       const data = await analyticsService.getDashboardStats();
       setStats(data || {});
@@ -21,6 +17,10 @@ export default function Stats() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchStats(false);
+  }, []);
 
   if (loading || !stats) {
     return (

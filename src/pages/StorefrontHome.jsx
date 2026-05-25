@@ -4,6 +4,12 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import { STORAGE_PATHS } from '../config/storage';
 import { storageService } from '../services/storage';
+import {
+  STOREFRONT_SECTION_KEYS,
+  fetchAllStorefrontSections,
+  saveStorefrontSection,
+  ensureStorefrontSection,
+} from '../services/storefrontCms';
 
 export default function StorefrontHome() {
   const [loading, setLoading] = useState(true);
@@ -25,13 +31,8 @@ export default function StorefrontHome() {
   const [desktopImageFile, setDesktopImageFile] = useState(null);
   const [mobileImageFile, setMobileImageFile] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = async (showLoading = true) => {
     try {
-      setLoading(true);
       
       // Fetch collections for dropdown
       const { data: colsData, error: colsError } = await supabase
@@ -43,17 +44,12 @@ export default function StorefrontHome() {
         setCollections(colsData);
       }
 
-      // Fetch sections from storefront_sections
-      const { data, error } = await supabase
-        .from('storefront_sections')
-        .select('*')
-        .order('order_index');
+      // Fetch sections via CMS service
+      const data = await fetchAllStorefrontSections();
 
-      if (error) {
-        throw error;
-      } else if (data && data.length > 0) {
-        const heroSection = data.find(s => s.type === 'hero');
-        const sectionsOrder = data.sort((a, b) => a.order_index - b.order_index).map(s => s.type);
+      if (data && data.length > 0) {
+        const heroSection = data.find(s => s.section_key === STOREFRONT_SECTION_KEYS.HERO);
+        const sectionsOrder = data.sort((a, b) => a.order_index - b.order_index).map(s => s.section_key);
 
         let heroContent = { slides: [{}] };
         if (heroSection?.content) {
@@ -66,16 +62,23 @@ export default function StorefrontHome() {
         if (slide.headline_part2) {
           titleFull += ' ' + slide.headline_part2;
         }
+        
+        const finalTitle = titleFull || heroContent.headline || heroContent.title || 'VISTA O QUE VOCÊ CARREGA';
+        const finalSubtitle = slide.subtitle || heroContent.subtitle || '';
+        const finalCtaText = slide.cta_text || heroContent.button_text || heroContent.cta_text || '';
+        const finalCtaLink = slide.cta_link || heroContent.button_link || heroContent.cta_link || '';
+        const finalImageDesktop = slide.image_url || heroContent.image_url || '';
+        const finalImageMobile = slide.image_url_mobile || heroContent.image_url_mobile || heroContent.image_url || '';
 
         setHomeData(prev => ({
           ...prev,
           hero_id: heroSection?.id || null,
-          hero_title: titleFull || 'VISTA O QUE VOCÊ CARREGA',
-          hero_subtitle: slide.subtitle || '',
-          hero_cta_text: slide.cta_text || '',
-          hero_cta_link: slide.cta_link || '',
-          hero_image_desktop: slide.image_url || '',
-          hero_image_mobile: slide.image_url_mobile || slide.image_url || '',
+          hero_title: finalTitle,
+          hero_subtitle: finalSubtitle,
+          hero_cta_text: finalCtaText,
+          hero_cta_link: finalCtaLink,
+          hero_image_desktop: finalImageDesktop,
+          hero_image_mobile: finalImageMobile,
           home_sections_order: sectionsOrder.length > 0 ? sectionsOrder : ['hero', 'campaigns', 'featured_products'],
           sections: data // Guardar os dados completos das sections
         }));
@@ -88,6 +91,10 @@ export default function StorefrontHome() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData(false);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -112,21 +119,16 @@ export default function StorefrontHome() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      console.log('SAVE INITIATED', homeData);
-      
+
       let finalDesktopUrl = homeData.hero_image_desktop;
       let finalMobileUrl = homeData.hero_image_mobile;
 
       if (desktopImageFile) {
-        console.log('UPLOADING DESKTOP IMAGE', desktopImageFile);
         finalDesktopUrl = await storageService.uploadFile(desktopImageFile, STORAGE_PATHS.HERO);
-        console.log('DESKTOP UPLOAD RESULT:', finalDesktopUrl);
       }
 
       if (mobileImageFile) {
-        console.log('UPLOADING MOBILE IMAGE', mobileImageFile);
         finalMobileUrl = await storageService.uploadFile(mobileImageFile, STORAGE_PATHS.HERO);
-        console.log('MOBILE UPLOAD RESULT:', finalMobileUrl);
       }
 
       const titleParts = (homeData.hero_title || '').split(' ');
@@ -134,6 +136,15 @@ export default function StorefrontHome() {
       const part1 = titleParts.join(' ');
 
       const heroContent = {
+        headline: homeData.hero_title,
+        title: homeData.hero_title,
+        subtitle: homeData.hero_subtitle,
+        button_text: homeData.hero_cta_text,
+        button_link: homeData.hero_cta_link,
+        cta_text: homeData.hero_cta_text,
+        cta_link: homeData.hero_cta_link,
+        image_url: finalDesktopUrl,
+        image_url_mobile: finalMobileUrl,
         slides: [
           {
             headline_part1: part1,
@@ -142,81 +153,34 @@ export default function StorefrontHome() {
             cta_text: homeData.hero_cta_text,
             cta_link: homeData.hero_cta_link,
             image_url: finalDesktopUrl,
-            image_url_mobile: finalMobileUrl
-          }
+            image_url_mobile: finalMobileUrl,
+          },
         ],
         autoplay: true,
-        autoplay_interval: 5000
+        autoplay_interval: 5000,
       };
 
-      // Atualizar explicitamente
-      heroContent.slides[0].image_url = finalDesktopUrl;
-      heroContent.slides[0].image_url_mobile = finalMobileUrl;
-
-      const heroPayload = {
+      const saved = await saveStorefrontSection({
+        sectionKey: STOREFRONT_SECTION_KEYS.HERO,
         type: 'hero',
         content: heroContent,
-        active: true,
-        order_index: homeData.home_sections_order.indexOf('hero') * 10 || 10,
-        updated_at: new Date().toISOString()
-      };
+        id: homeData.hero_id,
+        orderIndex: homeData.home_sections_order.indexOf('hero') * 10 || 10,
+      });
 
-      console.log('FINAL HERO PAYLOAD', JSON.stringify(heroPayload, null, 2));
-
-      let heroResult;
-      if (homeData.hero_id) {
-        heroResult = await supabase
-          .from('storefront_sections')
-          .update(heroPayload)
-          .eq('id', homeData.hero_id)
-          .select();
-          
-        if (heroResult.data && heroResult.data.length === 0) {
-          throw new Error('Bloqueado pelo banco de dados (RLS). Execute o arquivo 00_CORRECAO_BANCO_DE_DADOS.sql no Supabase.');
-        }
-      } else {
-        heroResult = await supabase
-          .from('storefront_sections')
-          .insert([heroPayload])
-          .select()
-          .single();
-          
-        if (heroResult.data) {
-          setHomeData(prev => ({ ...prev, hero_id: heroResult.data.id }));
-        }
+      if (!homeData.hero_id && saved?.id) {
+        setHomeData(prev => ({ ...prev, hero_id: saved.id }));
       }
 
-      console.log('SAVE RESPONSE:', heroResult);
-
-      if (heroResult?.error) throw heroResult.error;
-
-      // Atualizar a ordem das outras seções se já existirem
-      const currentSections = homeData.sections || [];
-      
       for (let i = 0; i < homeData.home_sections_order.length; i++) {
         const sectionType = homeData.home_sections_order[i];
         if (sectionType === 'hero') continue;
 
-        const existingSection = currentSections.find(s => s.type === sectionType);
-        const orderIndex = i * 10;
-
-        if (existingSection) {
-          await supabase
-            .from('storefront_sections')
-            .update({ order_index: orderIndex })
-            .eq('id', existingSection.id)
-            .select();
-        } else {
-          // Criar se não existir
-          await supabase
-            .from('storefront_sections')
-            .insert([{
-              type: sectionType,
-              active: true,
-              order_index: orderIndex,
-              content: {}
-            }]);
-        }
+        await ensureStorefrontSection({
+          sectionKey: sectionType,
+          type: sectionType,
+          orderIndex: i * 10,
+        });
       }
 
       setDesktopImageFile(null);
@@ -231,7 +195,7 @@ export default function StorefrontHome() {
       setLastUpdated(new Date().toISOString());
       
       // Recarregar os dados para atualizar os IDs das seções recém-criadas
-      fetchData();
+      fetchData(false);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao salvar configurações');

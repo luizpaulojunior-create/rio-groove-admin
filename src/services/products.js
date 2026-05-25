@@ -14,7 +14,7 @@ export const productsService = {
       const { data } = await api.get('/products');
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.message || 'Falha ao buscar produtos');
+      throw new Error(err.response?.data?.error || err.message || 'Falha ao buscar produtos', { cause: err });
     }
   },
 
@@ -23,7 +23,7 @@ export const productsService = {
       const { data } = await api.get(`/products/${id}`);
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.message || 'Falha ao buscar produto');
+      throw new Error(err.response?.data?.error || err.message || 'Falha ao buscar produto', { cause: err });
     }
   },
 
@@ -67,7 +67,7 @@ export const productsService = {
       const { data } = await api.post('/products', formData);
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao criar produto');
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao criar produto', { cause: err });
     }
   },
 
@@ -116,7 +116,7 @@ export const productsService = {
       const { data } = await api.put(`/products/${id}`, formData);
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao atualizar produto');
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao atualizar produto', { cause: err });
     }
   },
 
@@ -125,7 +125,7 @@ export const productsService = {
       const { data } = await api.delete(`/products/${id}`);
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao deletar produto');
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao deletar produto', { cause: err });
     }
   }
 };

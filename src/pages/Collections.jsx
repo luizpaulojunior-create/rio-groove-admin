@@ -16,13 +16,8 @@ export default function Collections() {
   const [editingCollection, setEditingCollection] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCollections();
-  }, []);
-
-  const fetchCollections = async () => {
+  const fetchCollections = async (showLoading = true) => {
     try {
-      setLoading(true);
       const data = await collectionsService.getCollections();
       setCollections(data);
     } catch (error) {
@@ -32,6 +27,10 @@ export default function Collections() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCollections(false);
+  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -58,7 +57,7 @@ export default function Collections() {
       }
       toast.update(loadingToast, { render: 'Coleção salva com sucesso!', type: 'success', isLoading: false, autoClose: 3000 });
       setIsModalOpen(false);
-      fetchCollections();
+      fetchCollections(false);
     } catch (error) {
       console.error('Erro ao salvar coleção:', error);
       toast.dismiss();

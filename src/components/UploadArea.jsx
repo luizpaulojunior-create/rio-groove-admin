@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { UploadCloud, X, GripVertical, Star } from 'lucide-react';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
-export default function UploadArea({ images = [], onChange }) {
+export default function UploadArea({ images = [], onChange, maxImages = null }) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [bulkColor, setBulkColor] = useState('');
@@ -17,10 +17,15 @@ export default function UploadArea({ images = [], onChange }) {
     }
   }, []);
 
-  const processFiles = (files) => {
+  const processFiles = useCallback((files) => {
     if (!files || files.length === 0) return;
     
-    const newImages = Array.from(files).map(file => {
+    let filesToProcess = Array.from(files);
+    if (maxImages && images.length + filesToProcess.length > maxImages) {
+      filesToProcess = filesToProcess.slice(0, maxImages - images.length);
+    }
+
+    const newImages = filesToProcess.map(file => {
       // Auto-detect color from filename (e.g. ze-pilintra-red-01.png)
       let autoColor = '';
       const nameParts = file.name.split('-');
@@ -49,7 +54,7 @@ export default function UploadArea({ images = [], onChange }) {
     }
 
     onChange([...images, ...newImages]);
-  };
+  }, [images, onChange]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
@@ -58,7 +63,7 @@ export default function UploadArea({ images = [], onChange }) {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFiles(e.dataTransfer.files);
     }
-  }, [images, onChange]);
+  }, [processFiles]);
 
   const handleChange = (e) => {
     e.preventDefault();
@@ -154,6 +159,7 @@ export default function UploadArea({ images = [], onChange }) {
       )}
 
       {/* Dropzone */}
+      {(!maxImages || images.length < maxImages) && (
       <div 
         className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
           dragActive 
@@ -183,6 +189,7 @@ export default function UploadArea({ images = [], onChange }) {
           </div>
         </label>
       </div>
+      )}
 
       {/* Galeria de Previews */}
       {images.length > 0 && (

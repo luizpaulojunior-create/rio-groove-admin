@@ -16,13 +16,8 @@ export default function Campaigns() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (showLoading = true) => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('campaigns')
         .select('*')
@@ -48,6 +43,10 @@ export default function Campaigns() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCampaigns(false);
+  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -95,7 +94,7 @@ export default function Campaigns() {
 
       toast.update(loadingToast, { render: 'Campanha salva com sucesso!', type: 'success', isLoading: false, autoClose: 3000 });
       setIsModalOpen(false);
-      fetchCampaigns();
+      fetchCampaigns(false);
     } catch (error) {
       console.error('Erro ao salvar campanha:', error);
       toast.dismiss();
@@ -142,7 +141,7 @@ export default function Campaigns() {
 
       if (error) throw error;
       toast.success('Status atualizado');
-      fetchCampaigns();
+      fetchCampaigns(false);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao atualizar');
