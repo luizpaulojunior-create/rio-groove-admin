@@ -495,9 +495,9 @@ export default function ProductDetail() {
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-heading text-white flex items-center gap-2">
                   <LayoutGrid size={18} className="text-[#FF4D00]" />
-                  Variantes & Estoque
+                  Variantes (SKUs — legado)
                 </h3>
-                <span className="text-xs text-zinc-500">{product.product_variants.length} variações</span>
+                <span className="text-xs text-zinc-500">{product.product_variants.length} variações · estoque em Blanks</span>
               </div>
               
               <div className="space-y-4">
@@ -559,12 +559,10 @@ export default function ProductDetail() {
                       {/* Ações */}
                       <div className="flex items-center justify-end md:ml-4">
                         <button 
-                          onClick={() => {
-                            setSelectedVariant(variant);
-                            setAdjustForm({ type: 'add', quantity: 1, reason: 'manual_adjustment', notes: '' });
-                            setAdjustModalOpen(true);
-                          }}
-                          className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-zinc-400 hover:text-white hover:border-[#FF4D00] hover:bg-[#FF4D00]/10 transition-all text-sm font-medium"
+                          type="button"
+                          disabled
+                          title="Ajuste de estoque legado desativado. Use Estoque → Blanks."
+                          className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-zinc-600 cursor-not-allowed text-sm font-medium"
                         >
                           <RefreshCcw size={14} /> Ajustar
                         </button>

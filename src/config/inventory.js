@@ -1,10 +1,10 @@
 /**
- * Referência central de estoque/catálogo — Fase 4.
- * Usado por Stock.jsx, ProductForm.jsx e fluxos operacionais admin.
+ * Referência central de estoque/catálogo — fonte única operacional.
+ * Manter alinhado com rio-groove-backend/src/config/inventory.js
  */
 export const CATEGORIES = [
   'Camisa',
-  'Camiseta',
+  'Regata',
   'Boné',
   'Caneca',
   'Acessório'
@@ -32,17 +32,19 @@ export const MODELS_BY_GENDER = {
   ]
 };
 
+export const MODELS_REGATA = ['Regular', 'Machão'];
+export const MODELS_BONE = ['Trucker', 'Dad Hat', 'Snapback'];
+export const MODEL_CANECA = '330ml';
+
 export const FABRICS = [
   'Lisa',
   'Estonada'
 ];
 
+export const APPAREL_SIZES = ['P', 'M', 'G', 'GG', 'XGG'];
+
 export const SIZES = [
-  'P',
-  'M',
-  'G',
-  'GG',
-  'XGG',
+  ...APPAREL_SIZES,
   'Tamanho Único'
 ];
 
@@ -50,40 +52,124 @@ export const COLORS = [
   { label: 'Black', key: 'blk', hex: '#000000' },
   { label: 'Off White', key: 'off', hex: '#F5F1E8' },
   { label: 'White', key: 'wht', hex: '#FFFFFF' },
-  { label: 'Chumbo', key: 'chb', hex: '#36454F' },
-  { label: 'Navy', key: 'nvy', hex: '#1B1F3B' },
-  { label: 'Verde Militar', key: 'vdm', hex: '#4B5320' },
-  { label: 'Bege Areia', key: 'bga', hex: '#D8C3A5' },
-  { label: 'Vermelho Escuro', key: 'vme', hex: '#6E0B14' }
+  { label: 'Verde', key: 'grn', hex: '#2D5016' },
+  { label: 'Vermelho', key: 'red', hex: '#8B0000' }
 ];
 
 const MODEL_PREFIXES = {
   'Oversized Boxy': 'OVR',
-  'Relaxed Fit': 'REL',
   'Regular Fit': 'REG',
   'Oversized Tradicional': 'OVT',
   'Baby Tee Altíssima': 'BTA',
   'Oversized Feminina': 'OVF',
   'Boxy Cropped': 'BOX',
   'Cropped Tradicional': 'CRO',
-  'Regata Cropped Boxy': 'RCB'
+  'Regata Cropped Boxy': 'RCB',
+  'Regular': 'RGT',
+  'Machão': 'MCH',
+  'Trucker': 'TRK',
+  'Dad Hat': 'DAD',
+  'Snapback': 'SNP',
+  '330ml': '330'
+};
+
+const RELAXED_FIT_PREFIX_BY_GENDER = {
+  'Masculino': 'RLM',
+  'Feminino': 'RLF'
 };
 
 const CATEGORY_PREFIXES = {
   'Camisa': 'CAM',
-  'Camiseta': 'TSH',
+  'Regata': 'RGT',
   'Boné': 'CAP',
   'Caneca': 'MUG',
   'Acessório': 'ACC'
 };
 
-export const generateSKU = (category, model, colorKey, size, fabric) => {
-  let parts = [];
-  
-  if (model && MODEL_PREFIXES[model]) {
-    parts.push(MODEL_PREFIXES[model]);
-  } else if (category && CATEGORY_PREFIXES[category]) {
-    parts.push(CATEGORY_PREFIXES[category]);
+export const UNIT_COST_BY_CATEGORY = {
+  'Camisa': 42,
+  'Regata': 25,
+  'Boné': 25,
+  'Caneca': 10,
+  'Acessório': 42
+};
+
+export function normalizeCategory(category) {
+  if (category === 'Camiseta') return 'Camisa';
+  return category;
+}
+
+export function categoryUsesGender(category) {
+  const cat = normalizeCategory(category);
+  return cat === 'Camisa' || cat === 'Acessório';
+}
+
+export function categoryUsesFabric(category) {
+  const cat = normalizeCategory(category);
+  return cat === 'Camisa' || cat === 'Regata' || cat === 'Acessório';
+}
+
+export function getModelsForCategory(category, gender) {
+  const cat = normalizeCategory(category);
+  if (cat === 'Camisa' || cat === 'Acessório') {
+    return MODELS_BY_GENDER[gender] || [];
+  }
+  if (cat === 'Regata') return MODELS_REGATA;
+  if (cat === 'Boné') return MODELS_BONE;
+  if (cat === 'Caneca') return [MODEL_CANECA];
+  return [];
+}
+
+export function getColorsForCategory(category) {
+  const cat = normalizeCategory(category);
+  if (cat === 'Caneca') {
+    return COLORS.filter((c) => c.key === 'wht');
+  }
+  return COLORS;
+}
+
+export function getSizesForCategory(category) {
+  const cat = normalizeCategory(category);
+  if (cat === 'Camisa' || cat === 'Regata') return APPAREL_SIZES;
+  return ['Tamanho Único'];
+}
+
+export function getModelPrefix(model, gender) {
+  if (model === 'Relaxed Fit' && gender && RELAXED_FIT_PREFIX_BY_GENDER[gender]) {
+    return RELAXED_FIT_PREFIX_BY_GENDER[gender];
+  }
+  return MODEL_PREFIXES[model] || null;
+}
+
+export const generateSKU = (category, model, colorKey, size, fabric, gender) => {
+  const cat = normalizeCategory(category);
+
+  if (cat === 'Caneca') {
+    return `MUG-330-${String(colorKey || 'wht').toUpperCase()}-U`;
+  }
+
+  if (cat === 'Boné') {
+    const prefix = getModelPrefix(model, null);
+    return [prefix, String(colorKey).toUpperCase(), 'U'].filter(Boolean).join('-');
+  }
+
+  if (cat === 'Acessório') {
+    const parts = ['ACC'];
+    const modelPrefix = getModelPrefix(model, gender);
+    if (modelPrefix) parts.push(modelPrefix);
+    if (colorKey) parts.push(String(colorKey).toUpperCase());
+    parts.push('U');
+    if (fabric) parts.push(fabric === 'Estonada' ? 'EST' : 'LS');
+    return parts.join('-');
+  }
+
+  const parts = [];
+  const modelPrefix = getModelPrefix(model, gender);
+
+  if (modelPrefix) {
+    parts.push(modelPrefix);
+  } else if (CATEGORY_PREFIXES[cat]) {
+    parts.push(CATEGORY_PREFIXES[cat]);
   } else if (model) {
     parts.push(model.substring(0, 3).toUpperCase());
   } else {
@@ -91,17 +177,34 @@ export const generateSKU = (category, model, colorKey, size, fabric) => {
   }
 
   if (colorKey) {
-    parts.push(colorKey.toUpperCase());
+    parts.push(String(colorKey).toUpperCase());
   }
 
   if (size) {
-    let sizeStr = size === 'Tamanho Único' ? 'U' : size;
-    parts.push(sizeStr.toUpperCase());
+    const sizeStr = size === 'Tamanho Único' ? 'U' : size;
+    parts.push(String(sizeStr).toUpperCase());
   }
 
-  if (fabric) {
+  if (fabric && categoryUsesFabric(cat)) {
     parts.push(fabric === 'Estonada' ? 'EST' : 'LS');
   }
 
   return parts.join('-');
 };
+
+export function getAllModelsForFilters() {
+  const models = new Set();
+  Object.values(MODELS_BY_GENDER).forEach((list) => list.forEach((m) => models.add(m)));
+  MODELS_REGATA.forEach((m) => models.add(m));
+  MODELS_BONE.forEach((m) => models.add(m));
+  models.add(MODEL_CANECA);
+  return Array.from(models).sort();
+}
+
+export function resolveGenderFromModel(model, storedGender) {
+  if (storedGender) return storedGender;
+  for (const [gender, models] of Object.entries(MODELS_BY_GENDER)) {
+    if (models.includes(model)) return gender;
+  }
+  return '';
+}

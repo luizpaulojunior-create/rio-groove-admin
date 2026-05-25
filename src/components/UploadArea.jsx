@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { UploadCloud, X, GripVertical, Star } from 'lucide-react';
 import { normalizeImageUrl } from '../utils/imageUtils';
+import { COLORS } from '../config/inventory';
 
 export default function UploadArea({ images = [], onChange, maxImages = null }) {
   const [dragActive, setDragActive] = useState(false);
@@ -115,18 +116,7 @@ export default function UploadArea({ images = [], onChange, maxImages = null }) 
     setBulkColor('');
   };
 
-  const COLORS_OPTIONS = [
-    { label: 'Red', value: 'red' },
-    { label: 'Black', value: 'blk' },
-    { label: 'White', value: 'wht' },
-    { label: 'Grey', value: 'gre' },
-    { label: 'Silver', value: 'silv' },
-    { label: 'Off White', value: 'off' },
-    { label: 'Blue', value: 'blue' },
-    { label: 'Green', value: 'grn' },
-    { label: 'Brown', value: 'brn' },
-    { label: 'Beige', value: 'bge' }
-  ];
+  const COLORS_OPTIONS = COLORS.map((c) => ({ label: c.label, value: c.key }));
 
   return (
     <div className="space-y-4">

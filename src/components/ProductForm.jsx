@@ -396,7 +396,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
           </button>
         </div>
         <p className="text-sm text-[var(--color-text-muted)] mb-4">
-          Gerencie o estoque e SKUs por tamanho e cor. O estoque total será a soma das variações.
+          Referência comercial de SKU por cor e tamanho. Estoque oficial fica em <strong className="text-white/70">Estoque → Blanks</strong> (não editável aqui).
         </p>
 
         {variants.length > 0 ? (
@@ -407,7 +407,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                   <th className="pb-2 font-medium">Cor</th>
                   <th className="pb-2 font-medium">Tamanho</th>
                   <th className="pb-2 font-medium">SKU *</th>
-                  <th className="pb-2 font-medium">Estoque</th>
                   <th className="pb-2 font-medium">Preço (Opcional)</th>
                   <th className="pb-2 font-medium">Imagem (URL)</th>
                   <th className="pb-2 font-medium"></th>
@@ -457,19 +456,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                           setVariants(newV);
                         }}
                         placeholder="Ex: CAM-PRT-M"
-                        className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-primary)]"
-                      />
-                    </td>
-                    <td className="py-3 pr-2 min-w-[100px]">
-                      <input 
-                        type="number"
-                        min="0"
-                        value={v.stock}
-                        onChange={(e) => {
-                          const newV = [...variants];
-                          newV[index].stock = parseInt(e.target.value) || 0;
-                          setVariants(newV);
-                        }}
                         className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-primary)]"
                       />
                     </td>

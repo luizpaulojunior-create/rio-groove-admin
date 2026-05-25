@@ -3,15 +3,14 @@ import Modal from '../components/Modal';
 import { stockService } from '../services/stock';
 import { toast } from 'react-toastify';
 import { Search, Plus, Edit, Trash2, ArrowRightLeft, Package, Copy, Check, FilterX, AlertTriangle, XCircle, CheckCircle2, Power, Eye } from 'lucide-react';
-import { CATEGORIES, GENDERS, MODELS_BY_GENDER, FABRICS, SIZES, COLORS, generateSKU } from '../config/inventory';
+import {
+  CATEGORIES, GENDERS, FABRICS, COLORS, generateSKU,
+  categoryUsesGender, categoryUsesFabric,
+  getModelsForCategory, getColorsForCategory, getSizesForCategory,
+  getAllModelsForFilters, resolveGenderFromModel, normalizeCategory
+} from '../config/inventory';
 
-const getGenderFromModel = (model) => {
-  if (!model) return '';
-  for (const [gender, models] of Object.entries(MODELS_BY_GENDER)) {
-    if (models.includes(model)) return gender;
-  }
-  return '';
-};
+const getGenderFromModel = (model, storedGender) => resolveGenderFromModel(model, storedGender);
 
 const getFabricFromSKU = (sku) => {
   if (!sku) return 'Lisa';
@@ -67,12 +66,48 @@ export default function Stock() {
   const [formColor, setFormColor] = useState('');
   const [formSize, setFormSize] = useState('M');
 
+  const formModels = useMemo(
+    () => getModelsForCategory(formCategory, formGender),
+    [formCategory, formGender]
+  );
+
+  const formColors = useMemo(
+    () => getColorsForCategory(formCategory),
+    [formCategory]
+  );
+
+  const formSizes = useMemo(
+    () => getSizesForCategory(formCategory),
+    [formCategory]
+  );
+
+  const applyCategoryDefaults = (newCat) => {
+    setFormCategory(newCat);
+    const sizes = getSizesForCategory(newCat);
+    setFormSize(sizes[0] || 'M');
+    const colors = getColorsForCategory(newCat);
+    setFormColor(colors[0]?.label || COLORS[0].label);
+    if (categoryUsesGender(newCat)) {
+      const g = formGender || GENDERS[0];
+      setFormGender(g);
+      const models = getModelsForCategory(newCat, g);
+      setFormModel(models[0] || '');
+    } else {
+      const models = getModelsForCategory(newCat, null);
+      setFormModel(models[0] || '');
+    }
+    if (!categoryUsesFabric(newCat)) {
+      setFormFabric('Lisa');
+    }
+  };
   const formSku = useMemo(() => {
     if (editingItem) return editingItem.sku || '';
-    const colorObj = COLORS.find(c => c.label === formColor);
+    const colorObj = formColors.find(c => c.label === formColor) || COLORS.find(c => c.label === formColor);
     const colorKey = colorObj ? colorObj.key : '';
-    return generateSKU(formCategory, formModel, colorKey, formSize, formFabric);
-  }, [formCategory, formModel, formColor, formSize, formFabric, editingItem]);
+    const genderArg = categoryUsesGender(formCategory) ? formGender : null;
+    const fabricArg = categoryUsesFabric(formCategory) ? formFabric : null;
+    return generateSKU(formCategory, formModel, colorKey, formSize, fabricArg, genderArg);
+  }, [formCategory, formModel, formColor, formSize, formFabric, formGender, formColors, editingItem]);
 
   const [copiedSku, setCopiedSku] = useState(null);
 
@@ -110,15 +145,11 @@ export default function Stock() {
     setTimeout(() => setCopiedSku(null), 2000);
   };
 
-  const availableModels = useMemo(() => {
-    const models = new Set();
-    Object.values(MODELS_BY_GENDER).forEach(list => list.forEach(m => models.add(m)));
-    return Array.from(models).sort();
-  }, []);
+  const availableModels = useMemo(() => getAllModelsForFilters(), []);
 
   const filteredItems = useMemo(() => {
     return stockItems.filter(item => {
-      const itemGender = getGenderFromModel(item.model);
+      const itemGender = getGenderFromModel(item.model, item.gender);
       const itemFabric = getFabricFromSKU(item.sku);
       const itemStatus = Number(item.quantity) === 0 ? 'ESGOTADO' : (Number(item.quantity) <= Number(item.min_stock) ? 'BAIXO' : 'DISPONÍVEL');
       const isActive = item.is_active !== false;
@@ -155,11 +186,14 @@ export default function Stock() {
 
   const handleSeed = async () => {
     if (isProcessing) return;
+    if (!window.confirm('Popular estoque base com toda a grade operacional (idempotente — não duplica itens existentes)?')) {
+      return;
+    }
     try {
       setIsProcessing(true);
-      const loadingToast = toast.loading('Gerando estoque mestre inicial...');
+      const loadingToast = toast.loading('Gerando grade operacional base...');
       const response = await stockService.seedStockItems();
-      toast.update(loadingToast, { render: response.message, type: 'success', isLoading: false, autoClose: 5000 });
+      toast.update(loadingToast, { render: response.message, type: 'success', isLoading: false, autoClose: 6000 });
       fetchStock(false);
     } catch (error) {
       console.error('Erro ao gerar estoque:', error);
@@ -172,23 +206,20 @@ export default function Stock() {
 
   const handleAdd = () => {
     setEditingItem(null);
-    setFormCategory(CATEGORIES[0]);
-    setFormGender(GENDERS[0]);
-    setFormModel(MODELS_BY_GENDER[GENDERS[0]][0]);
+    applyCategoryDefaults(CATEGORIES[0]);
     setFormFabric(FABRICS[0]);
-    setFormColor(COLORS[0].label);
-    setFormSize('M');
     setIsModalOpen(true);
   };
 
   const handleEditInit = (item) => {
     setEditingItem(item);
-    setFormCategory(item.category || CATEGORIES[0]);
+    const cat = normalizeCategory(item.category || CATEGORIES[0]);
+    setFormCategory(cat);
     setFormModel(item.model || '');
     setFormColor(item.color_label || COLORS[0].label);
     setFormSize(item.size || 'M');
-    setFormGender(getGenderFromModel(item.model) || GENDERS[0]);
-    setFormFabric(getFabricFromSKU(item.sku) || FABRICS[0]);
+    setFormGender(getGenderFromModel(item.model, item.gender) || GENDERS[0]);
+    setFormFabric(item.fabric || getFabricFromSKU(item.sku) || FABRICS[0]);
     setIsModalOpen(true);
   };
 
@@ -302,10 +333,12 @@ export default function Stock() {
       return;
     }
 
+    const cat = normalizeCategory(category);
+
     const data = {
-      category,
-      gender: editingItem?.gender || formGender,
-      fabric: editingItem?.fabric || formFabric,
+      category: cat,
+      gender: categoryUsesGender(cat) ? (editingItem?.gender || formGender) : null,
+      fabric: categoryUsesFabric(cat) ? (editingItem?.fabric || formFabric) : null,
       model,
       color_key,
       color_label,
@@ -365,7 +398,7 @@ export default function Stock() {
               className="flex-1 md:flex-none px-3 h-8 bg-[#111] border border-[#222] rounded text-xs font-medium text-[var(--color-text-muted)] hover:text-white hover:bg-[#1a1a1a] flex items-center justify-center gap-1.5 transition-colors"
             >
               <Package size={14} />
-              <span>Gerar Inicial</span>
+              <span>Popular Estoque Base</span>
             </button>
             <button
               onClick={handleAdd}
@@ -783,13 +816,7 @@ export default function Stock() {
                 <select
                   name="category"
                   value={formCategory}
-                  onChange={(e) => {
-                    const newCat = e.target.value;
-                    setFormCategory(newCat);
-                    if (['Boné', 'Caneca', 'Acessório'].includes(newCat)) {
-                      setFormSize('Tamanho Único');
-                    }
-                  }}
+                  onChange={(e) => applyCategoryDefaults(e.target.value)}
                   required
                   disabled={!!editingItem}
                   className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -798,15 +825,17 @@ export default function Stock() {
                 </select>
               </div>
 
-              {!editingItem && (
+              {!editingItem && categoryUsesGender(formCategory) && (
                 <div>
                   <label className="block text-[11px] font-medium text-[#aaa] mb-1">Gênero *</label>
                   <select
                     name="gender"
                     value={formGender}
                     onChange={(e) => {
-                      setFormGender(e.target.value);
-                      setFormModel(MODELS_BY_GENDER[e.target.value][0]);
+                      const g = e.target.value;
+                      setFormGender(g);
+                      const models = getModelsForCategory(formCategory, g);
+                      setFormModel(models[0] || '');
                     }}
                     required
                     className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none"
@@ -833,12 +862,12 @@ export default function Stock() {
                     required
                     className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none"
                   >
-                    {MODELS_BY_GENDER[formGender]?.map(m => <option key={m} value={m}>{m}</option>)}
+                    {formModels.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 )}
               </div>
 
-              {!editingItem && (
+              {!editingItem && categoryUsesFabric(formCategory) && (
                 <div>
                   <label className="block text-[11px] font-medium text-[#aaa] mb-1">Malha *</label>
                   <select
@@ -878,7 +907,7 @@ export default function Stock() {
                       required
                       className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none"
                     >
-                      {COLORS.map(c => <option key={c.label} value={c.label}>{c.label}</option>)}
+                      {formColors.map(c => <option key={c.label} value={c.label}>{c.label}</option>)}
                     </select>
                   )}
                 </div>
@@ -899,7 +928,7 @@ export default function Stock() {
                       onChange={(e) => setFormSize(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none"
                     >
-                      {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                      {formSizes.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   )}
                 </div>
