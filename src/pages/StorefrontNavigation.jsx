@@ -6,6 +6,7 @@ import {
   fetchStorefrontSection,
   saveStorefrontSection,
 } from '../services/storefrontCms';
+import { NAVIGATION_SEED_ITEMS } from '../config/navigationSeed';
 
 export default function StorefrontNavigation() {
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,31 @@ export default function StorefrontNavigation() {
     } catch (err) {
       console.error(err);
       toast.error('Erro ao salvar navegação');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImportSeed = async () => {
+    if (menuItems.length > 0 && !window.confirm('Substituir o menu atual pelo padrão Rio Groove?')) {
+      return;
+    }
+    try {
+      setSaving(true);
+      setMenuItems(NAVIGATION_SEED_ITEMS);
+      const saved = await saveStorefrontSection({
+        sectionKey: STOREFRONT_SECTION_KEYS.NAVIGATION,
+        type: 'navigation_config',
+        content: { items: NAVIGATION_SEED_ITEMS },
+        id: navId,
+        orderIndex: 5,
+      });
+      if (!navId) setNavId(saved.id);
+      toast.success('Menu padrão importado e salvo');
+      setLastUpdated(new Date().toISOString());
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao importar menu. Verifique login admin e RLS.');
     } finally {
       setSaving(false);
     }
@@ -156,6 +182,15 @@ export default function StorefrontNavigation() {
           </div>
         </div>
         <div className="flex gap-3">
+          {!navId && menuItems.length === 0 && (
+            <button
+              onClick={handleImportSeed}
+              disabled={saving}
+              className="btn-secondary flex items-center gap-2 px-6 py-2.5 rounded-xl border border-[#FF4D00]/30 text-[#FF4D00] hover:bg-[#FF4D00]/10 transition-colors"
+            >
+              Importar Menu Padrão
+            </button>
+          )}
           <button 
             onClick={addMenuItem}
             className="btn-secondary flex items-center gap-2 px-6 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-white"

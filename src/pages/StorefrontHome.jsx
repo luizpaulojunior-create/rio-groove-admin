@@ -18,10 +18,10 @@ export default function StorefrontHome() {
     hero_id: null,
     hero_title: 'VISTA O QUE VOCÊ CARREGA',
     hero_subtitle: 'Streetwear autoral brasileiro com presença editorial, cultura urbana e ancestralidade em peças premium para quem transforma identidade em movimento.',
-    hero_cta_text: 'VER COLEÇÕES',
+    hero_cta_text: '',
     hero_cta_link: '/collections',
-    hero_image_desktop: 'https://images.unsplash.com/photo-1523398002811-999aa8d9512e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80',
-    hero_image_mobile: 'https://images.unsplash.com/photo-1523398002811-999aa8d9512e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    hero_image_desktop: '',
+    hero_image_mobile: '',
     featured_collection_id: null,
     home_sections_order: ['hero', 'campaigns', 'featured_products']
   });

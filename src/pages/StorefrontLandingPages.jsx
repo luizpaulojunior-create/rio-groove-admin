@@ -13,6 +13,7 @@ import Modal from '../components/Modal';
 export default function StorefrontLandingPages() {
   const [loading, setLoading] = useState(true);
   const [pages, setPages] = useState([]);
+  const [tableMissing, setTableMissing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -36,11 +37,17 @@ export default function StorefrontLandingPages() {
   const fetchPages = async () => {
     try {
       setLoading(true);
+      setTableMissing(false);
       const data = await fetchLandingPages();
       setPages(data);
     } catch (err) {
       console.error(err);
-      toast.error('Erro ao carregar landing pages.');
+      if (err.code === 'LANDING_PAGES_TABLE_MISSING') {
+        setTableMissing(true);
+        toast.error('Tabela landing_pages ausente. Execute a migration SQL.');
+      } else {
+        toast.error('Erro ao carregar landing pages.');
+      }
     } finally {
       setLoading(false);
     }
@@ -170,10 +177,24 @@ export default function StorefrontLandingPages() {
           <h2 className="text-2xl font-heading text-white uppercase tracking-wider">Landing Pages & Collections</h2>
           <p className="text-[var(--color-text-muted)] text-sm mt-1">Gerencie páginas editoriais, campanhas e drops.</p>
         </div>
-        <button onClick={handleAddNew} className="btn-primary flex items-center gap-2">
-          <Plus size={18} /> Nova Página
-        </button>
+        {!tableMissing && (
+          <button onClick={handleAddNew} className="btn-primary flex items-center gap-2">
+            <Plus size={18} /> Nova Página
+          </button>
+        )}
       </div>
+
+      {tableMissing && (
+        <div className="bg-[#FF4D00]/10 border border-[#FF4D00]/30 rounded-3xl p-6 text-white">
+          <h3 className="font-heading text-lg mb-2">Migration necessária</h3>
+          <p className="text-sm text-white/80 mb-2">
+            A tabela <code className="text-[#FF4D00]">landing_pages</code> não existe no Supabase.
+          </p>
+          <p className="text-sm text-white/60">
+            Execute o arquivo <strong>supabase/fase4b_landing_pages.sql</strong> no SQL Editor do Supabase e recarregue esta página.
+          </p>
+        </div>
+      )}
 
       <div className="bg-[#0D0D0D] border border-white/5 rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-left border-collapse">

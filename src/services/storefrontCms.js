@@ -120,7 +120,9 @@ export async function fetchLandingPages() {
 
   if (error) {
     if (error.code === '42P01' || error.message?.includes('does not exist')) {
-      return [];
+      const err = new Error('Tabela landing_pages não existe. Execute supabase/fase4b_landing_pages.sql no Supabase.');
+      err.code = 'LANDING_PAGES_TABLE_MISSING';
+      throw err;
     }
     throw error;
   }
