@@ -42,18 +42,15 @@ npm run build
 npm run preview
 ```
 
-## Comandos PowerShell — deploy (Netlify)
-
-Deploy via Git push para branch conectada ao Netlify.
+## Deploy (Cloudflare Pages)
 
 ```powershell
 cd c:\Users\luizp\Downloads\rio-groove-admin
 npm run build
-# dist/ é publicado automaticamente pelo Netlify
-# SPA fallback configurado em netlify.toml
+npx wrangler pages deploy dist --project-name=rio-groove-admin-painel --commit-dirty=true
 ```
 
-Variáveis de ambiente devem ser configuradas no painel Netlify:
+Variáveis no painel Cloudflare Pages (ver `.env.example`):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_API_URL`
