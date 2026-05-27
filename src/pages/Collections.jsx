@@ -40,6 +40,7 @@ export default function Collections() {
       name: formData.get('name'),
       slug: formData.get('slug'),
       description: formData.get('description'),
+      video_url: formData.get('video_url') || null,
     };
 
     try {
@@ -143,6 +144,18 @@ export default function Collections() {
           <div>
             <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Descrição</label>
             <textarea name="description" defaultValue={editingCollection?.description} rows={4} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none" />
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Vídeo YouTube (URL)</label>
+            <input
+              name="video_url"
+              type="url"
+              defaultValue={editingCollection?.video_url || ''}
+              placeholder="https://youtube.com/watch?v=..."
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
+            />
+            <p className="text-xs text-[var(--color-text-muted)] mt-2">Embed leve na página da coleção — opcional.</p>
           </div>
 
           <div>

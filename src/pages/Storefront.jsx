@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
-import { Home, Layout, Type, Image as ImageIcon, Smartphone, Globe, Settings } from 'lucide-react';
+import { Home, Layout, Type, Image as ImageIcon, Smartphone, Globe, Settings, ScrollText } from 'lucide-react';
 import StorefrontHome from './StorefrontHome';
 import StorefrontHeader from './StorefrontHeader';
 import StorefrontNavigation from './StorefrontNavigation';
 import StorefrontBranding from './StorefrontBranding';
+import StorefrontFooter from './StorefrontFooter';
 import StorefrontLandingPages from './StorefrontLandingPages';
 import StorefrontMobile from './StorefrontMobile';
+import StorefrontManifesto from './StorefrontManifesto';
 
 function StorefrontComingSoon({ title }) {
   return (
@@ -29,6 +31,7 @@ export default function Storefront() {
     { path: '/admin/storefront/footer', name: 'Footer', icon: Layout },
     { path: '/admin/storefront/navigation', name: 'Navegação', icon: Globe },
     { path: '/admin/storefront/landing-pages', name: 'Landing Pages', icon: Type },
+    { path: '/admin/storefront/manifesto', name: 'Manifesto', icon: ScrollText },
     { path: '/admin/storefront/branding', name: 'Branding', icon: ImageIcon },
     { path: '/admin/storefront/mobile', name: 'Mobile Experience', icon: Smartphone },
   ];
@@ -81,8 +84,10 @@ export default function Storefront() {
             <Route path="/" element={<Navigate to="home" replace />} />
             <Route path="home" element={<StorefrontHome />} />
             <Route path="header" element={<StorefrontHeader />} />
+            <Route path="footer" element={<StorefrontFooter />} />
             <Route path="navigation" element={<StorefrontNavigation />} />
             <Route path="landing-pages" element={<StorefrontLandingPages />} />
+            <Route path="manifesto" element={<StorefrontManifesto />} />
             <Route path="branding" element={<StorefrontBranding />} />
             <Route path="mobile" element={<StorefrontMobile />} />
             <Route path="*" element={

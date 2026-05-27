@@ -8,6 +8,7 @@
 | `VITE_SUPABASE_ANON_KEY` | Sim | `src/lib/supabase.js` | — |
 | `VITE_API_URL` | Recomendada | `src/lib/api.js` | `https://rio-groove-backend.onrender.com/api` |
 | `VITE_MELHOR_ENVIO_URL` | Não | `.env.production` apenas | Orders.jsx hardcode `melhorenvio.com.br` |
+| `VITE_SENTRY_DSN` | Não | `src/lib/monitoring.js` | Desligado se vazio |
 
 > **Não existe `.env.example`** neste repo — criar localmente a partir desta tabela.
 

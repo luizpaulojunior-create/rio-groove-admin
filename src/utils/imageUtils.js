@@ -56,3 +56,19 @@ export const normalizeImageUrl = (url) => {
 
   return url;
 };
+
+/** Preview/thumbnail via Supabase render/image quando aplicável. */
+export const optimizeImageUrl = (url, options = {}) => {
+  const normalized = normalizeImageUrl(url);
+  if (!normalized) return '';
+
+  const objectPrefix = '/storage/v1/object/public/';
+  if (!normalized.includes('supabase.co') || !normalized.includes(objectPrefix)) {
+    return normalized;
+  }
+
+  const width = options.width ?? 960;
+  const quality = options.quality ?? 80;
+  const transformed = normalized.replace(objectPrefix, '/storage/v1/render/image/public/');
+  return `${transformed}?width=${width}&quality=${quality}&format=webp`;
+};

@@ -20,10 +20,10 @@ const Storefront = lazy(() => import('../pages/Storefront'));
 const Campaigns = lazy(() => import('../pages/Campaigns'));
 const Coupons = lazy(() => import('../pages/Coupons'));
 const Editorial = lazy(() => import('../pages/Editorial'));
-const Community = lazy(() => import('../pages/Community'));
-const Creators = lazy(() => import('../pages/Creators'));
-const CRM = lazy(() => import('../pages/CRM'));
-const Loyalty = lazy(() => import('../pages/Loyalty'));
+const Artists = lazy(() => import('../pages/Artists'));
+const Newsletter = lazy(() => import('../pages/Newsletter'));
+const Affiliates = lazy(() => import('../pages/Affiliates'));
+const Seo = lazy(() => import('../pages/Seo'));
 
 const LoadingFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">
@@ -57,10 +57,10 @@ export default function AppRoutes() {
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="coupons" element={<Coupons />} />
         <Route path="editorial" element={<Editorial />} />
-        <Route path="community" element={<Community />} />
-        <Route path="creators" element={<Creators />} />
-        <Route path="crm" element={<CRM />} />
-        <Route path="loyalty" element={<Loyalty />} />
+        <Route path="artists" element={<Artists />} />
+        <Route path="newsletter" element={<Newsletter />} />
+        <Route path="affiliates" element={<Affiliates />} />
+        <Route path="seo" element={<Seo />} />
         </Route>
       </Route>
     </Routes>

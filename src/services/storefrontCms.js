@@ -9,7 +9,9 @@ export const STOREFRONT_SECTION_KEYS = {
   HEADER: 'header',
   NAVIGATION: 'navigation',
   BRANDING: 'branding',
+  FOOTER: 'footer',
   MOBILE: 'mobile-experience',
+  MANIFESTO: 'manifesto',
 };
 
 /** @returns {Promise<object|null>} */
@@ -149,5 +151,66 @@ export async function saveLandingPage(payload, id = null) {
 
 export async function deleteLandingPage(id) {
   const { error } = await supabase.from('landing_pages').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/** @returns {Promise<object[]>} */
+export async function fetchEditorialPosts() {
+  const { data, error } = await supabase
+    .from('landing_pages')
+    .select('*')
+    .eq('type', 'editorial')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+// --- Artistas (tabela artists) ---
+
+/** @returns {Promise<object[]>} */
+export async function fetchArtists() {
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      const err = new Error('Tabela artists não existe. Execute supabase/11_movimentos_cms.sql no Supabase.');
+      err.code = 'ARTISTS_TABLE_MISSING';
+      throw err;
+    }
+    throw error;
+  }
+  return data || [];
+}
+
+/** @returns {Promise<object>} */
+export async function saveArtist(payload, id = null) {
+  const record = {
+    ...payload,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (id) {
+    const { data, error } = await supabase
+      .from('artists')
+      .update(record)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  const { data, error } = await supabase.from('artists').insert([record]).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteArtist(id) {
+  const { error } = await supabase.from('artists').delete().eq('id', id);
   if (error) throw error;
 }
