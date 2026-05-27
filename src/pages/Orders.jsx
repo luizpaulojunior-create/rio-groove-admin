@@ -9,13 +9,11 @@ import {
 import { toast } from 'react-toastify';
 import { ordersService, isPickupOrder } from '../services/orders';
 import { shippingService } from '../services/shipping';
-import { stockService } from '../services/stock';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
 const TIMELINE_STEPS = [
   { id: 'aguardando_pagamento', label: 'Aguardando Pagamento' },
   { id: 'pagamento_aprovado', label: 'Pagamento Aprovado' },
-  { id: 'estoque_reservado', label: 'Estoque Reservado' },
   { id: 'aguardando_producao', label: 'Aguardando Produção' },
   { id: 'em_producao', label: 'Em Produção' },
   { id: 'producao_concluida', label: 'Produção Concluída' },
@@ -41,10 +39,12 @@ const STATUS_MAP = {
 };
 
 const STOCK_DEDUCTED_STATUSES = [
-  'estoque_reservado', 'aguardando_producao', 'em_producao', 
-  'producao_concluida', 'preparando_envio', 'etiqueta_gerada', 
+  'pagamento_aprovado', 'aguardando_producao', 'em_producao',
+  'producao_concluida', 'preparando_envio', 'etiqueta_gerada',
   'postado', 'em_transito', 'saiu_para_entrega', 'entregue',
-  'processing', 'preparando', 'shipped', 'delivered'
+  'processing', 'preparando', 'shipped', 'delivered',
+  // legado — pedidos que passaram pela etapa antiga
+  'estoque_reservado',
 ];
 
 export default function Orders() {
@@ -122,7 +122,10 @@ if (
 
   const getOrderActiveIndex = (order) => {
     if (!order) return 0;
-    const normStatus = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
+    let normStatus = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
+    if (normStatus === 'estoque_reservado') {
+      normStatus = 'aguardando_producao';
+    }
     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
     let activeIdx = TIMELINE_STEPS.findIndex(s => s.id === normStatus);
     if (isCancelled || activeIdx === -1) {
@@ -189,43 +192,11 @@ if (
     if (isProcessing) return;
     try {
       setIsProcessing(true);
-      
-      const currentOrder = orders.find(o => o.id === orderId) || selectedOrder;
-
-      const normalizeColor = (c) => String(c || '').toLowerCase().trim().replace(/preto/g, 'preta');
-      const normalizeSize = (s) => String(s || '').toUpperCase().trim();
-
-      if (newStatus === 'estoque_reservado' && currentOrder) {
-        const stockItems = await stockService.getStock();
-        const itemsToProcess = currentOrder.items || [];
-        
-        for (const item of itemsToProcess) {
-          if (!item.color || !item.size || item.color === '-' || item.size === '-') continue;
-          
-          const stockItem = stockItems.find(
-            s => normalizeColor(s.color) === normalizeColor(item.color) && normalizeSize(s.size) === normalizeSize(item.size)
-          );
-          
-          if (!stockItem) {
-             toast.error(`Falta de Estoque: Lote para a cor ${item.color} e tamanho ${item.size} não encontrado.`);
-             setIsProcessing(false);
-             return;
-          }
-          
-          if (stockItem.quantity <= 0 || stockItem.quantity < item.quantity) {
-             toast.error(`Falta de Estoque: Apenas ${stockItem.quantity} disponíveis de ${item.color} - ${item.size}.`);
-             setIsProcessing(false);
-             return;
-          }
-        }
-      }
 
       const stepLabel = TIMELINE_STEPS.find(s => s.id === newStatus)?.label || newStatus;
       let logMsg = customLogMessage;
       if (!logMsg) {
-        if (newStatus === 'estoque_reservado') {
-          logMsg = 'Estoque reservado automaticamente';
-        } else if (newStatus === 'em_producao') {
+        if (newStatus === 'em_producao') {
           logMsg = 'Pedido entrou em produção';
         } else if (newStatus === 'cancelado') {
           logMsg = 'Pedido cancelado';
@@ -240,49 +211,6 @@ if (
         ...extraData,
         log_message: logMsg,
       });
-      
-      if (newStatus === 'estoque_reservado' && currentOrder) {
-        toast.update(loadingToast, { render: 'Reservando estoque...', type: 'info', isLoading: true });
-        const stockItems = await stockService.getStock();
-        const itemsToProcess = currentOrder.items || [];
-        
-        for (const item of itemsToProcess) {
-          if (!item.color || !item.size || item.color === '-' || item.size === '-') continue;
-          const stockItem = stockItems.find(
-            s => normalizeColor(s.color) === normalizeColor(item.color) && normalizeSize(s.size) === normalizeSize(item.size)
-          );
-          if (stockItem) {
-            try {
-              await stockService.adjustStock(stockItem.id, -item.quantity, `Reserva Pedido #${orderId}`);
-            } catch (stockError) {
-              console.error(`Falha ao reservar estoque para item ${item.product?.name}:`, stockError);
-              toast.error(`Falha ao reservar estoque para ${item.product?.name || 'item'}`);
-            }
-          }
-        }
-      }
-
-      if (newStatus === 'cancelado' && currentOrder) {
-        toast.update(loadingToast, { render: 'Cancelando pedido e processando devoluções...', type: 'info', isLoading: true });
-        const normStatus = getNormalizedStatus(currentOrder.status);
-        if (STOCK_DEDUCTED_STATUSES.includes(normStatus)) {
-          const stockItems = await stockService.getStock();
-          const itemsToProcess = currentOrder.items || [];
-          for (const item of itemsToProcess) {
-            if (!item.color || !item.size || item.color === '-' || item.size === '-') continue;
-            const stockItem = stockItems.find(
-              s => normalizeColor(s.color) === normalizeColor(item.color) && normalizeSize(s.size) === normalizeSize(item.size)
-            );
-            if (stockItem) {
-              try {
-                await stockService.adjustStock(stockItem.id, item.quantity, `Devolução Cancelamento #${orderId}`);
-              } catch (stockError) {
-                 console.error(`Erro ao devolver estoque para ${item.product?.name}:`, stockError);
-              }
-            }
-          }
-        }
-      }
 
       toast.update(loadingToast, { render: `Status atualizado para: ${stepLabel}`, type: 'success', isLoading: false, autoClose: 3000 });
 
@@ -317,7 +245,7 @@ if (
 
   const handleCancelOrder = () => {
     if (isProcessing) return;
-    if (!window.confirm('Deseja realmente cancelar este pedido? O estoque será devolvido caso já tenha sido baixado.')) {
+    if (!window.confirm('Deseja realmente cancelar este pedido?')) {
       return;
     }
     updateOrderStatus(selectedOrder.id, 'cancelado');
@@ -354,10 +282,6 @@ if (
     }
     
     if (stepId === 'pagamento_aprovado') {
-      actions.push(<button key="er" onClick={() => handleUpdateStatus('estoque_reservado')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Package size={18} />Reservar Estoque</button>);
-    }
-
-    if (stepId === 'estoque_reservado') {
       actions.push(<button key="aprod" onClick={() => handleUpdateStatus('aguardando_producao')} disabled={isProcessing} className="w-full h-12 bg-[#EAB308] text-black rounded-2xl text-[14px] font-medium hover:bg-[#dca506] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"><ArrowRight size={18} />Enviar para Produção</button>);
     }
 
@@ -549,7 +473,7 @@ if (
                     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                     const activeIdx = getOrderActiveIndex(selectedOrder);
 
-                    const opSteps = TIMELINE_STEPS.slice(0, 8); // Até Etiqueta Gerada
+                    const opSteps = TIMELINE_STEPS.slice(0, 7); // Até Etiqueta Gerada
 
                     return opSteps.map((step, idx) => {
                       const isCompleted = idx < activeIdx;
@@ -660,15 +584,15 @@ if (
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
-                const isAfterEtiqueta = activeIdx >= 7 && !isCancelled;
+                const isAfterEtiqueta = activeIdx >= 6 && !isCancelled;
                 
                 return (
                   <div className={`bg-[#0D0D0D] border border-[rgba(255,255,255,0.06)] rounded-[24px] p-6 shadow-sm transition-all duration-500 ${isAfterEtiqueta ? 'ring-1 ring-[#22C55E]/30 shadow-[0_0_30px_rgba(34,197,94,0.05)]' : 'opacity-80'}`}>
                     <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-white mb-6">Acompanhamento da Entrega</h2>
                     
                     <div className="space-y-0 pl-2">
-                      {TIMELINE_STEPS.slice(8).map((step, relativeIdx, arr) => {
-                        const idx = relativeIdx + 8;
+                      {TIMELINE_STEPS.slice(7).map((step, relativeIdx, arr) => {
+                        const idx = relativeIdx + 7;
                         const isCompleted = idx < activeIdx;
                         const isCurrent = !isCancelled && idx === activeIdx;
                         const isCancelledStep = isCancelled && idx === activeIdx;
