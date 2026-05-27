@@ -44,15 +44,11 @@ npm run build
 npm run preview
 ```
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare Pages — build nativo)
 
-```powershell
-cd c:\Users\luizp\Downloads\rio-groove-admin
-npm run build
-npx wrangler pages deploy dist --project-name=rio-groove-admin-painel --commit-dirty=true
-```
+**Não usar GitHub Actions para deploy** (removido — competia com o build do Cloudflare).
 
-Variáveis no painel Cloudflare Pages (ver `.env.example`):
+Variáveis no painel Cloudflare Pages → **Settings → Environment variables** (Production):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_API_URL`
