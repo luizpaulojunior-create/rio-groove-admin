@@ -415,6 +415,8 @@ CEP: ${address?.cep || '-'}
 
     tracking_code: order?.shipping_tracking_code || order?.tracking_code || '',
     trackingCode: order?.shipping_tracking_code || order?.tracking_code || '',
+    shipping_label_url: order?.shipping_label_url || '',
+    melhor_envio_shipment_id: order?.melhor_envio_shipment_id || '',
 
     items,
 

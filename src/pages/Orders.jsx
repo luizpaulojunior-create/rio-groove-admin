@@ -3,7 +3,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { 
   Truck, Package, Clock, CheckCircle2, AlertCircle, 
-  Loader2, FileText, XCircle, Printer, Copy, 
+  Loader2, FileText, XCircle, Printer, Copy, Download,
   Settings, ArrowRight, Search, Filter 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -264,6 +264,67 @@ if (
     }
   };
 
+  const refreshSelectedOrder = async (orderId) => {
+    const refreshed = await ordersService.getOrder(orderId);
+    if (!refreshed) return null;
+    setSelectedOrder(refreshed);
+    setManualTrackingCode(refreshed.trackingCode || refreshed.tracking_code || '');
+    setOrders((prev) => prev.map((order) => (order.id === orderId ? refreshed : order)));
+    return refreshed;
+  };
+
+  const handleDownloadLabelPdf = async () => {
+    if (!selectedOrder?.id || isProcessing) return;
+    const loadingToast = toast.loading('Baixando etiqueta...', { toastId: 'download-label' });
+    try {
+      setIsProcessing(true);
+      const filename = `etiqueta-pedido-${selectedOrder.order_number || selectedOrder.id}.pdf`;
+      const result = await shippingService.downloadLabelPdf(selectedOrder.id, filename);
+      toast.update(loadingToast, {
+        render: result.downloaded ? 'PDF baixado!' : 'Etiqueta aberta em nova aba.',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.dismiss('download-label');
+      toast.error(error?.response?.data?.message || error.message || 'Falha ao baixar etiqueta.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGenerateLabel = async () => {
+    if (!selectedOrder?.id || isProcessing) return;
+    const loadingToast = toast.loading('Gerando etiqueta no Melhor Envio...', { toastId: 'generate-label' });
+    try {
+      setIsProcessing(true);
+      await shippingService.fulfillLabel(selectedOrder.id);
+      const refreshed = await refreshSelectedOrder(selectedOrder.id);
+      toast.update(loadingToast, { render: 'Etiqueta gerada! Baixando PDF...', type: 'info', isLoading: true });
+      try {
+        const filename = `etiqueta-pedido-${refreshed?.order_number || selectedOrder.id}.pdf`;
+        await shippingService.downloadLabelPdf(selectedOrder.id, filename);
+        toast.update(loadingToast, { render: 'Etiqueta gerada e PDF baixado!', type: 'success', isLoading: false, autoClose: 4000 });
+      } catch (pdfError) {
+        console.warn('PDF imediato indisponível', pdfError);
+        toast.update(loadingToast, {
+          render: 'Etiqueta gerada. Use "Baixar PDF" se o download não iniciou.',
+          type: 'success',
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.dismiss('generate-label');
+      toast.error(error?.response?.data?.message || error.message || 'Falha ao gerar etiqueta.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     toast.success('Copiado para a área de transferência!');
@@ -298,7 +359,29 @@ if (
     }
 
     if (stepId === 'preparando_envio' && !isPickupOrder(selectedOrder)) {
-      actions.push(<button key="ge" onClick={() => window.open('https://melhorenvio.com.br/carrinho', '_blank')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Printer size={18} />Carrinho Melhor Envio</button>);
+      actions.push(
+        <button key="gl" onClick={handleGenerateLabel} disabled={isProcessing} className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+          <Printer size={18} />Gerar Etiqueta (PDF)
+        </button>,
+        <button key="ge" onClick={() => window.open('https://melhorenvio.com.br/carrinho', '_blank')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]">
+          <Package size={18} />Carrinho Melhor Envio
+        </button>,
+      );
+    }
+
+    const hasLabel = Boolean(
+      selectedOrder.tracking_code ||
+      selectedOrder.trackingCode ||
+      selectedOrder.shipping_label_url ||
+      selectedOrder.melhor_envio_shipment_id,
+    );
+    const labelReadySteps = ['etiqueta_gerada', 'postado', 'em_transito', 'saiu_para_entrega', 'entregue'];
+    if (!isPickupOrder(selectedOrder) && hasLabel && labelReadySteps.includes(stepId)) {
+      actions.push(
+        <button key="dl" onClick={handleDownloadLabelPdf} disabled={isProcessing} className="w-full h-12 bg-[#050505] border border-[rgba(255,255,255,0.12)] text-white rounded-2xl text-[14px] font-medium hover:border-[#22C55E]/40 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50">
+          <Download size={18} />Baixar PDF da Etiqueta
+        </button>,
+      );
     }
 
     return actions;
@@ -678,7 +761,19 @@ if (
                 
                 <div className="space-y-4">
                   <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)] flex flex-col gap-3">
-                    <span className="block font-sans text-[10px] uppercase text-white/50 tracking-wider">Código de Rastreio</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="block font-sans text-[10px] uppercase text-white/50 tracking-wider">Código de Rastreio</span>
+                      {!isPickupOrder(selectedOrder) && (selectedOrder.trackingCode || selectedOrder.tracking_code || selectedOrder.melhor_envio_shipment_id) && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadLabelPdf}
+                          disabled={isProcessing}
+                          className="inline-flex items-center gap-1.5 text-[11px] text-[#22C55E] hover:text-[#1ea951] disabled:opacity-50"
+                        >
+                          <Download size={12} /> Baixar PDF
+                        </button>
+                      )}
+                    </div>
                     <div className="flex gap-2 items-center">
                       {selectedOrder.trackingCode || selectedOrder.tracking_code ? (
                         <p className="font-sans text-[18px] text-white font-bold tracking-widest">{selectedOrder.trackingCode || selectedOrder.tracking_code}</p>
