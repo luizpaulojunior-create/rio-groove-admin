@@ -363,17 +363,26 @@ if (
         <button key="gl" onClick={handleGenerateLabel} disabled={isProcessing} className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]">
           <Printer size={18} />Gerar Etiqueta (PDF)
         </button>,
-        <button key="ge" onClick={() => window.open('https://melhorenvio.com.br/carrinho', '_blank')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]">
+        <button
+          key="ge"
+          onClick={() => {
+            window.open('https://melhorenvio.com.br/carrinho', '_blank');
+            toast.info('Após pagar no Melhor Envio, volte e clique em "Gerar Etiqueta".', { autoClose: 6000 });
+          }}
+          disabled={isProcessing}
+          className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"
+        >
           <Package size={18} />Carrinho Melhor Envio
         </button>,
       );
     }
 
     const hasLabel = Boolean(
-      selectedOrder.tracking_code ||
-      selectedOrder.trackingCode ||
       selectedOrder.shipping_label_url ||
-      selectedOrder.melhor_envio_shipment_id,
+      selectedOrder.shipping_status === 'label_generated' ||
+      selectedOrder.fulfillment_status === 'etiqueta_gerada' ||
+      selectedOrder.tracking_code ||
+      selectedOrder.trackingCode,
     );
     const labelReadySteps = ['etiqueta_gerada', 'postado', 'em_transito', 'saiu_para_entrega', 'entregue'];
     if (!isPickupOrder(selectedOrder) && hasLabel && labelReadySteps.includes(stepId)) {
