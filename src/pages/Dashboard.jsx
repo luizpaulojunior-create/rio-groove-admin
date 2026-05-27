@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { analyticsService } from '../services/analytics';
+import { buildDashboardStats, buildSalesChartData, buildTopProducts } from '../services/analytics';
 import { stockService } from '../services/stock';
 import { ordersService } from '../services/orders';
 import { AlertTriangle, AlertCircle, Clock, Package, TrendingUp, Zap, Activity } from 'lucide-react';
@@ -16,23 +16,21 @@ export default function Dashboard() {
 
   const fetchData = async (showLoading = true) => {
     try {
-      const [statsData, stockData, ordersData, chartResp, topProdResp] = await Promise.all([
-        analyticsService.getDashboardStats().catch(() => ({})),
+      const [stockData, ordersData] = await Promise.all([
         stockService.getStock().catch(() => []),
         ordersService.getOrders().catch(() => []),
-        analyticsService.getSalesChartData('30d').catch(() => []),
-        analyticsService.getTopProducts().catch(() => [])
       ]);
-      
+
+      const validOrders = Array.isArray(ordersData) ? ordersData : [];
+      validOrders.sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
+
+      const statsData = buildDashboardStats(validOrders, stockData || []);
+      const chartResp = buildSalesChartData(validOrders, '30d');
+      const topProdResp = buildTopProducts(validOrders);
+
       setStats(statsData || {});
       setStockItems(stockData || []);
-      
-      // Ensure orders is an array
-      const validOrders = Array.isArray(ordersData) ? ordersData : [];
-      // Sort orders by created_at desc
-      validOrders.sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
       setOrders(validOrders);
-      
       setChartData(Array.isArray(chartResp) && chartResp.length > 0 ? chartResp : [
         { date: 'Seg', revenue: 0 },
         { date: 'Ter', revenue: 0 },
@@ -42,7 +40,6 @@ export default function Dashboard() {
         { date: 'Sáb', revenue: 0 },
         { date: 'Dom', revenue: 0 }
       ]);
-      
       setTopProducts(Array.isArray(topProdResp) ? topProdResp : []);
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);

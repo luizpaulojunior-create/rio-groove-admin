@@ -629,8 +629,8 @@ if (
                           </div>
                           <div>
                             <span className="block font-sans text-[10px] uppercase text-white/50 mb-0.5 tracking-wider">Estoque Base</span>
-                            <span className={`font-sans text-[14px] ${STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status)) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
-                              {STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status)) ? 'Baixado' : 'Pendente'}
+                            <span className={`font-sans text-[14px] ${(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status))) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
+                              {(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status))) ? 'Baixado' : 'Pendente'}
                             </span>
                           </div>
                         </div>
