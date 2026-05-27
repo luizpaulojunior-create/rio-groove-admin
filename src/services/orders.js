@@ -5,7 +5,7 @@ const STATUS_MAP = {
   pending: 'aguardando_pagamento',
   paid: 'pagamento_aprovado',
   approved: 'pagamento_aprovado',
-  reserved: 'estoque_reservado',
+  reserved: 'aguardando_producao',
   production_pending: 'aguardando_producao',
   in_production: 'em_producao',
   production_done: 'producao_concluida',
@@ -50,10 +50,42 @@ const TIMELINE_STEPS = {
   cancelado: -1
 };
 
+function resolveItemPrice(item) {
+  const meta = item?.metadata_json || item?.raw || {};
+  const qty = Number(item?.quantity || 1);
+  const lineTotal = Number(item?.line_total || item?.lineTotal || meta?.lineTotal || meta?.line_total || 0);
+  let price = Number(
+    item?.unit_price ||
+      item?.unitPrice ||
+      item?.price ||
+      meta?.unitPrice ||
+      meta?.unit_price ||
+      meta?.price ||
+      0,
+  );
+  if (price <= 0 && lineTotal > 0 && qty > 0) {
+    price = lineTotal / qty;
+  }
+  return price;
+}
+
+function resolveShippingAmount(order, raw, shipping) {
+  const amount =
+    order?.shipping_amount ??
+    raw?.shipping?.price ??
+    raw?.totals?.shipping ??
+    shipping?.price;
+  const parsed = Number(amount);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function normalizeStatus(order) {
   if (!order) return 'aguardando_pagamento';
 
   if (order.fulfillment_status && STATUS_LABELS[order.fulfillment_status]) {
+    if (order.fulfillment_status === 'estoque_reservado') {
+      return 'aguardando_producao';
+    }
     return order.fulfillment_status;
   }
 
@@ -91,7 +123,14 @@ function normalizeStatus(order) {
   }
   
   if (Object.values(STATUS_MAP).includes(normalizedRaw)) {
+    if (normalizedRaw === 'estoque_reservado') {
+      return 'aguardando_producao';
+    }
     return normalizedRaw;
+  }
+
+  if (order.payment_status === 'paid' || order.paid_at) {
+    return 'pagamento_aprovado';
   }
 
   return 'aguardando_pagamento';
@@ -105,9 +144,11 @@ function mapOrderItem(item) {
       item?.title ||
       item?.name ||
       item?.product?.name ||
+      meta?.productName ||
+      meta?.name ||
       'Produto',
   );
-  const price = Number(item?.unit_price || item?.unitPrice || item?.price || 0);
+  const price = resolveItemPrice(item);
   const sku = String(item?.sku || meta?.sku || 'N/A');
   const image =
     item?.image_url ||
@@ -206,10 +247,23 @@ export function isPickupOrder(order) {
   return method.includes('retirada');
 }
 
+function parseRawPayload(order) {
+  const raw = order?.raw_checkout_payload;
+  if (!raw) return {};
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return raw;
+}
+
 function normalizeOrder(order) {
   if (!order || typeof order !== 'object') return {};
   
-  const raw = order?.raw_checkout_payload || {};
+  const raw = parseRawPayload(order);
 
   const address = {
     cep: String(order?.shipping_cep || raw?.address?.cep || raw?.address?.zipCode || '-'),
@@ -224,6 +278,7 @@ function normalizeOrder(order) {
   const customer = raw?.customer || order?.customer || {};
   const shipping = raw?.shipping || order?.shippingInfo || {};
   const items = mapOrderItems(order, raw);
+  const shippingAmount = resolveShippingAmount(order, raw, shipping);
 
   const total =
     Number(
@@ -341,13 +396,22 @@ CEP: ${address?.cep || '-'}
 `.trim(),
 
     // ENVIO
-    shipping_method: order?.shipping_method || shipping?.label || 'Correios/Jadlog',
+    shipping_method: order?.shipping_method || shipping?.label || raw?.shipping?.label || 'Correios/Jadlog',
 
-    shipping_deadline: order?.shipping_deadline || shipping?.deadline || '-',
+    shipping_deadline: order?.shipping_deadline || shipping?.deadline || raw?.shipping?.deadline || '-',
 
-    shipping_amount: Number(order?.shipping_amount ?? shipping?.price ?? 0),
+    shipping_amount: shippingAmount,
 
-    shipping_price: Number(order?.shipping_amount ?? shipping?.price ?? 0),
+    shipping_price: shippingAmount,
+
+    shippingInfo: {
+      method: order?.shipping_method || shipping?.label || raw?.shipping?.label || '',
+      price: shippingAmount,
+      address: address.street,
+      city: address.city,
+      state: address.state,
+      zipCode: address.cep,
+    },
 
     tracking_code: order?.shipping_tracking_code || order?.tracking_code || '',
     trackingCode: order?.shipping_tracking_code || order?.tracking_code || '',

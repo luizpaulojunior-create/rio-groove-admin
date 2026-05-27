@@ -710,17 +710,25 @@ if (
                     </div>
                     <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)]">
                       <span className="block font-sans text-[10px] uppercase text-white/50 mb-1 tracking-wider">Valor do Frete</span>
-                      <p className="font-sans text-[14px] text-white font-medium">R$ {Number(selectedOrder.shippingInfo?.price || selectedOrder.shipping_price || selectedOrder.shippingPrice || 0).toFixed(2)}</p>
+                      <p className="font-sans text-[14px] text-white font-medium">R$ {Number(selectedOrder.shipping_amount ?? selectedOrder.shipping_price ?? selectedOrder.shippingInfo?.price ?? 0).toFixed(2)}</p>
                     </div>
                   </div>
 
                   <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)]">
                     <span className="block font-sans text-[10px] uppercase text-white/50 mb-1 tracking-wider">Endereço de Entrega</span>
-                    <p className="font-sans text-[14px] text-white/80 leading-relaxed mt-2">
-                      {String(selectedOrder.shippingInfo?.address || selectedOrder.shipping_street || selectedOrder.address?.street || 'Não informado')}
-                      {String(selectedOrder.shipping_number || selectedOrder.address?.number ? `, ${selectedOrder.shipping_number || selectedOrder.address?.number}` : '')}<br/>
-                      {String(selectedOrder.shippingInfo?.city || selectedOrder.shipping_city || selectedOrder.address?.city || '-')} - {String(selectedOrder.shippingInfo?.state || selectedOrder.shipping_state || selectedOrder.address?.state || '-')}<br/>
-                      CEP: {String(selectedOrder.shippingInfo?.zipCode || selectedOrder.shipping_cep || selectedOrder.address?.cep || '-')}
+                    <p className="font-sans text-[14px] text-white/80 leading-relaxed mt-2 whitespace-pre-line">
+                      {selectedOrder.shipping_address || (
+                        <>
+                          {String(selectedOrder.shipping_street || selectedOrder.address?.street || 'Não informado')}
+                          {selectedOrder.shipping_number || selectedOrder.address?.number ? `, ${selectedOrder.shipping_number || selectedOrder.address?.number}` : ''}
+                          {'\n'}
+                          {String(selectedOrder.shipping_neighborhood || selectedOrder.address?.neighborhood || '-')}
+                          {'\n'}
+                          {String(selectedOrder.shipping_city || selectedOrder.address?.city || '-')} - {String(selectedOrder.shipping_state || selectedOrder.address?.state || '-')}
+                          {'\n'}
+                          CEP: {String(selectedOrder.shipping_cep || selectedOrder.address?.cep || '-')}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
