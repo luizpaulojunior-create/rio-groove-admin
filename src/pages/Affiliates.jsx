@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import { fetchAffiliateStats, saveAffiliate, deleteAffiliate } from '../services/growthCms';
 
-const STORE_URL = 'https://rio-groove-store-v2.pages.dev';
+const STORE_URL = (import.meta.env.VITE_STORE_URL || 'https://store.riogroovemovimentos.com.br').replace(/\/$/, '');
 
 const emptyForm = {
   id: null,
