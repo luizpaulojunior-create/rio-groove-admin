@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { buildDashboardStats, buildSalesChartData, buildTopProducts } from '../services/analytics';
+import { buildDashboardStats, buildSalesChartData, buildTopProducts, analyticsService } from '../services/analytics';
 import { stockService } from '../services/stock';
 import { ordersService } from '../services/orders';
 import { AlertTriangle, AlertCircle, Clock, Package, TrendingUp, Zap, Activity } from 'lucide-react';
@@ -16,22 +16,31 @@ export default function Dashboard() {
 
   const fetchData = async (showLoading = true) => {
     try {
-      const [stockData, ordersData] = await Promise.all([
+      const [statsData, stockData, ordersData, chartResp, topProdResp] = await Promise.all([
+        analyticsService.getDashboardStats().catch(() => ({})),
         stockService.getStock().catch(() => []),
         ordersService.getOrders().catch(() => []),
+        analyticsService.getSalesChartData('30d').catch(() => []),
+        analyticsService.getTopProducts().catch(() => []),
       ]);
 
       const validOrders = Array.isArray(ordersData) ? ordersData : [];
       validOrders.sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
 
-      const statsData = buildDashboardStats(validOrders, stockData || []);
-      const chartResp = buildSalesChartData(validOrders, '30d');
-      const topProdResp = buildTopProducts(validOrders);
+      const resolvedStats = statsData?.available
+        ? statsData
+        : buildDashboardStats(validOrders, stockData || []);
+      const resolvedChart = Array.isArray(chartResp) && chartResp.length > 0
+        ? chartResp
+        : buildSalesChartData(validOrders, '30d');
+      const resolvedTop = Array.isArray(topProdResp) && topProdResp.length > 0
+        ? topProdResp
+        : buildTopProducts(validOrders);
 
-      setStats(statsData || {});
+      setStats(resolvedStats || {});
       setStockItems(stockData || []);
       setOrders(validOrders);
-      setChartData(Array.isArray(chartResp) && chartResp.length > 0 ? chartResp : [
+      setChartData(resolvedChart.length > 0 ? resolvedChart : [
         { date: 'Seg', revenue: 0 },
         { date: 'Ter', revenue: 0 },
         { date: 'Qua', revenue: 0 },
@@ -40,7 +49,7 @@ export default function Dashboard() {
         { date: 'Sáb', revenue: 0 },
         { date: 'Dom', revenue: 0 }
       ]);
-      setTopProducts(Array.isArray(topProdResp) ? topProdResp : []);
+      setTopProducts(resolvedTop);
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
     } finally {

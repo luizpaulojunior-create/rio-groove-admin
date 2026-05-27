@@ -1,7 +1,7 @@
 /**
- * KPIs calculados a partir de pedidos e estoque já carregados no admin.
- * Backend /analytics/* não implementado — evita stubs zerados no Dashboard.
+ * KPIs via backend /analytics/* com fallback client-side (Dashboard).
  */
+import api from '../lib/api';
 
 const PAID_STATUSES = new Set(['paid', 'pagamento_aprovado', 'fulfilled']);
 const CANCELLED_STATUSES = new Set(['cancelled', 'cancelado', 'refunded', 'payment_failed']);
@@ -167,17 +167,32 @@ export function buildTopProducts(orders = [], limit = 5) {
     .slice(0, limit);
 }
 
-/** @deprecated Use buildDashboardStats(orders, stockItems) */
+/** Prefer backend analytics; fallback to client aggregation. */
 export const analyticsService = {
-  async getDashboardStats() {
-    return buildDashboardStats();
+  async getDashboardStats(orders = [], stockItems = []) {
+    try {
+      const { data } = await api.get('/analytics/dashboard');
+      return data;
+    } catch {
+      return buildDashboardStats(orders, stockItems);
+    }
   },
 
-  async getSalesChartData(period = '30d') {
-    return buildSalesChartData([], period);
+  async getSalesChartData(period = '30d', orders = []) {
+    try {
+      const { data } = await api.get('/analytics/sales', { params: { period } });
+      return data;
+    } catch {
+      return buildSalesChartData(orders, period);
+    }
   },
 
-  async getTopProducts() {
-    return buildTopProducts();
+  async getTopProducts(orders = []) {
+    try {
+      const { data } = await api.get('/analytics/top-products');
+      return data;
+    } catch {
+      return buildTopProducts(orders);
+    }
   },
 };

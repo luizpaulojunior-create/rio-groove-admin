@@ -6,6 +6,7 @@ import StorefrontHeader from './StorefrontHeader';
 import StorefrontNavigation from './StorefrontNavigation';
 import StorefrontBranding from './StorefrontBranding';
 import StorefrontLandingPages from './StorefrontLandingPages';
+import StorefrontMobile from './StorefrontMobile';
 
 function StorefrontComingSoon({ title }) {
   return (
@@ -29,7 +30,7 @@ export default function Storefront() {
     { path: '/admin/storefront/navigation', name: 'Navegação', icon: Globe },
     { path: '/admin/storefront/landing-pages', name: 'Landing Pages', icon: Type },
     { path: '/admin/storefront/branding', name: 'Branding', icon: ImageIcon },
-    { path: '/admin/storefront/mobile', name: 'Mobile Experience', icon: Smartphone, comingSoon: true },
+    { path: '/admin/storefront/mobile', name: 'Mobile Experience', icon: Smartphone },
   ];
 
   return (
@@ -83,7 +84,7 @@ export default function Storefront() {
             <Route path="navigation" element={<StorefrontNavigation />} />
             <Route path="landing-pages" element={<StorefrontLandingPages />} />
             <Route path="branding" element={<StorefrontBranding />} />
-            <Route path="mobile" element={<StorefrontComingSoon title="Mobile Experience" />} />
+            <Route path="mobile" element={<StorefrontMobile />} />
             <Route path="*" element={
               <div className="bg-[#0D0D0D] border border-white/5 rounded-2xl p-12 text-center">
                 <Settings className="w-12 h-12 text-white/20 mx-auto mb-4" />
