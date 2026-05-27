@@ -7,7 +7,7 @@ import {
   Settings, ArrowRight, Search, Filter 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { ordersService } from '../services/orders';
+import { ordersService, isPickupOrder } from '../services/orders';
 import { shippingService } from '../services/shipping';
 import { stockService } from '../services/stock';
 import { normalizeImageUrl } from '../utils/imageUtils';
@@ -29,6 +29,10 @@ const TIMELINE_STEPS = [
 
 const STATUS_MAP = {
   'pending': 'aguardando_pagamento',
+  'pending_payment': 'aguardando_pagamento',
+  'awaiting_payment': 'aguardando_pagamento',
+  'created': 'aguardando_pagamento',
+  'paid': 'pagamento_aprovado',
   'processing': 'preparando_envio',
   'preparando': 'preparando_envio',
   'shipped': 'em_transito',
@@ -79,7 +83,7 @@ if (
 }
     if (statusFilter !== 'all') {
       result = result.filter(order => {
-        const normalizedStatus = STATUS_MAP[order.status] || order.status;
+        const normalizedStatus = STATUS_MAP[order.fulfillment_status || order.status] || order.fulfillment_status || order.status;
         return normalizedStatus === statusFilter;
       });
     }
@@ -118,7 +122,7 @@ if (
 
   const getOrderActiveIndex = (order) => {
     if (!order) return 0;
-    const normStatus = getNormalizedStatus(order.timelineStep || order.status);
+    const normStatus = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
     let activeIdx = TIMELINE_STEPS.findIndex(s => s.id === normStatus);
     if (isCancelled || activeIdx === -1) {
@@ -166,7 +170,7 @@ if (
     setIsModalOpen(true);
 
     // Tracking automático ao abrir pedido (referência = id do pedido, não código de rastreio)
-    const norm = getNormalizedStatus(order.timelineStep || order.status);
+    const norm = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
 
     if (order.id && !['entregue', 'cancelado'].includes(norm)) {
       try {
@@ -232,7 +236,10 @@ if (
 
       const loadingToast = toast.loading(`Atualizando para ${stepLabel}...`, { toastId: `update-status-${orderId}` });
       
-      await ordersService.updateOrderStatus(orderId, newStatus, extraData);
+      const updatedOrder = await ordersService.updateOrderStatus(orderId, newStatus, {
+        ...extraData,
+        log_message: logMsg,
+      });
       
       if (newStatus === 'estoque_reservado' && currentOrder) {
         toast.update(loadingToast, { render: 'Reservando estoque...', type: 'info', isLoading: true });
@@ -278,41 +285,21 @@ if (
       }
 
       toast.update(loadingToast, { render: `Status atualizado para: ${stepLabel}`, type: 'success', isLoading: false, autoClose: 3000 });
-      
-      const newLog = {
-        id: Date.now(),
-        action: logMsg,
-        message: logMsg,
-        createdAt: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        user: 'Operador / Sistema',
+
+      const mergedOrder = {
+        ...updatedOrder,
+        ...extraData,
+        tracking_code: extraData.tracking_code || updatedOrder.tracking_code,
+        trackingCode: extraData.tracking_code || updatedOrder.trackingCode,
       };
 
-      setOrders(prevOrders => prevOrders.map(order => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            status: newStatus,
-            timelineStep: newStatus,
-            ...extraData,
-            logs: [...(order.logs || []), newLog]
-          };
-        }
-        return order;
-      }));
+      setOrders(prevOrders => prevOrders.map(order => (
+        order.id === orderId ? mergedOrder : order
+      )));
       
-      setSelectedOrder(prev => {
-        if (prev && prev.id === orderId) {
-          return {
-            ...prev,
-            status: newStatus,
-            timelineStep: newStatus,
-            ...extraData,
-            logs: [...(prev.logs || []), newLog]
-          };
-        }
-        return prev;
-      });
+      setSelectedOrder(prev => (
+        prev && prev.id === orderId ? mergedOrder : prev
+      ));
 
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -386,8 +373,8 @@ if (
       actions.push(<button key="pe" onClick={() => handleUpdateStatus('preparando_envio')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Package size={18} />Preparar Envio</button>);
     }
 
-    if (stepId === 'preparando_envio') {
-      actions.push(<button key="ge" onClick={() => window.open('https://melhorenvio.com.br/carrinho', '_blank')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Printer size={18} />Gerar Etiqueta</button>);
+    if (stepId === 'preparando_envio' && !isPickupOrder(selectedOrder)) {
+      actions.push(<button key="ge" onClick={() => window.open('https://melhorenvio.com.br/carrinho', '_blank')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Printer size={18} />Carrinho Melhor Envio</button>);
     }
 
     return actions;
@@ -558,7 +545,7 @@ if (
                 
                 <div className="relative flex justify-between items-start px-2 overflow-x-auto pb-6 custom-scrollbar">
                   {(() => {
-                    const normStatus = getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status);
+                    const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
                     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                     const activeIdx = getOrderActiveIndex(selectedOrder);
 
@@ -635,8 +622,8 @@ if (
                           </div>
                           <div>
                             <span className="block font-sans text-[10px] uppercase text-white/50 mb-0.5 tracking-wider">Estoque Base</span>
-                            <span className={`font-sans text-[14px] ${STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status)) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
-                              {STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status)) ? 'Baixado' : 'Pendente'}
+                            <span className={`font-sans text-[14px] ${STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status)) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
+                              {STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status)) ? 'Baixado' : 'Pendente'}
                             </span>
                           </div>
                         </div>
@@ -649,9 +636,27 @@ if (
                 </div>
               </div>
 
-              {/* 3. ACOMPANHAMENTO DA ENTREGA */}
+              {/* 3. ACOMPANHAMENTO DA ENTREGA / RETIRADA */}
               {(() => {
-                const normStatus = getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status);
+                if (isPickupOrder(selectedOrder)) {
+                  const activeIdx = getOrderActiveIndex(selectedOrder);
+                  const isPaid = activeIdx >= 1;
+
+                  return (
+                    <div className="bg-[#0D0D0D] border border-[#FF4D00]/20 rounded-[24px] p-6 shadow-sm">
+                      <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-white mb-4">
+                        Retirada no Rio de Janeiro
+                      </h2>
+                      <p className="font-sans text-[14px] text-white/70 leading-relaxed">
+                        {isPaid
+                          ? 'Pagamento confirmado. Combine data, horário e local da retirada com o cliente pelo WhatsApp.'
+                          : 'Pedido com retirada presencial. Após confirmação do pagamento, alinhe a retirada diretamente com o cliente.'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
@@ -713,7 +718,7 @@ if (
               
               {/* 1. AÇÕES OPERACIONAIS */}
               {(() => {
-                const normStatus = getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status);
+                const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
