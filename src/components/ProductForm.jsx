@@ -146,8 +146,8 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
 
   const parseFabricAppearances = (data) => {
     const raw = data?.fabric_appearances || data?.fabricAppearances;
-    let fabrics = [];
     if (!raw) return [];
+    let fabrics;
     if (typeof raw === 'string') {
       try {
         const parsed = JSON.parse(raw);

@@ -295,17 +295,6 @@ export default function Products() {
               let fabrics = parseJsonArray(row.fabric_appearances || row.fabricAppearances);
               fabrics = fabrics.filter(f => f !== 'offWhite' && f !== 'Off White');
 
-              let colors = parseJsonArray(row.colors);
-              let originalFabrics = parseJsonArray(row.fabric_appearances || row.fabricAppearances);
-              if (originalFabrics.includes('offWhite') || originalFabrics.includes('Off White')) {
-                if (!colors.includes('Off White') && !colors.includes('offWhite')) {
-                  colors.push('Off White');
-                }
-              }
-              colors = colors.map(c => c === 'offWhite' ? 'Off White' : c);
-
-              let dispImages = parseJsonArray(row.product_images || row.images);
-
               return (
                 <div key={row.id} className="p-4 flex flex-col gap-4">
                   <div className="flex gap-4 items-center justify-between">
