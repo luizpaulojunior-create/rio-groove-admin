@@ -57,7 +57,10 @@ export const shippingService = {
       const text = await response.data.text();
       const json = JSON.parse(text);
       if (json.labelUrl) {
-        window.open(json.labelUrl, '_blank', 'noopener,noreferrer');
+        const popup = window.open(json.labelUrl, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+          throw new Error('Pop-up bloqueado. Permita pop-ups ou copie o link: ' + json.labelUrl);
+        }
         return { downloaded: false, labelUrl: json.labelUrl };
       }
       throw new Error(json.message || 'PDF da etiqueta indisponível.');
