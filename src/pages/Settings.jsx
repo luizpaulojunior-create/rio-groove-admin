@@ -203,6 +203,10 @@ export default function Settings() {
               Client ID e Client Secret são configurados no backend (Render), por segurança — não ficam editáveis
               aqui. Se precisar trocar, atualize as variáveis de ambiente no painel do Render.
             </p>
+            <p className="mb-4 text-xs text-amber-400/90">
+              Se etiqueta ou PDF falhar com erro 403, clique em Reconectar para renovar as permissões OAuth
+              (inclui impressão de etiquetas).
+            </p>
             {hasMinRole(adminRole, ADMIN_ROLES.SUPERADMIN) ? (
               <button
                 type="button"
