@@ -82,8 +82,9 @@ export const shippingService = {
     return data;
   },
 
-  /** URL de OAuth Melhor Envio — GET /auth/melhor-envio/login (redirect browser) */
-  getMelhorEnvioLoginUrl() {
-    return `${getBackendRootUrl()}/auth/melhor-envio/login`;
+  /** Inicia OAuth Melhor Envio (superadmin) — retorna URL assinada para redirect */
+  async startMelhorEnvioOAuth() {
+    const { data } = await api.post('/auth/melhor-envio/start');
+    return data;
   },
 };

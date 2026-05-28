@@ -22,6 +22,7 @@ export const ROUTE_MIN_ROLES = {
   '/admin/settings': ADMIN_ROLES.SUPERADMIN,
   '/admin/stock': ADMIN_ROLES.EDITOR,
   '/admin/products': ADMIN_ROLES.EDITOR,
+  '/admin/orders': ADMIN_ROLES.EDITOR,
   '/admin/campaigns': ADMIN_ROLES.EDITOR,
   '/admin/coupons': ADMIN_ROLES.EDITOR,
   '/admin/storefront': ADMIN_ROLES.EDITOR,
@@ -30,6 +31,10 @@ export const ROUTE_MIN_ROLES = {
   '/admin/seo': ADMIN_ROLES.EDITOR,
   '/admin/editorial': ADMIN_ROLES.EDITOR,
   '/admin/artists': ADMIN_ROLES.EDITOR,
+  '/admin/collections': ADMIN_ROLES.EDITOR,
+  '/admin/customers': ADMIN_ROLES.VIEWER,
+  '/admin/dashboard': ADMIN_ROLES.VIEWER,
+  '/admin/stats': ADMIN_ROLES.VIEWER,
 };
 
 /** @param {string} pathname */

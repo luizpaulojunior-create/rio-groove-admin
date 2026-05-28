@@ -69,20 +69,10 @@ export const AuthProvider = ({
       } = result;
 
       if (adminError) {
-        console.error(
-          'Erro admin:',
-          adminError
-        );
-        if (/role/i.test(adminError.message || '')) {
-          const { data: fallbackAdmin } = await supabase
-            .from('admins')
-            .select('id')
-            .eq('id', currentUser.id)
-            .maybeSingle();
-          setIsAdmin(!!fallbackAdmin);
-          setAdminRole('superadmin');
-          return;
-        }
+        console.error('Erro admin:', adminError);
+        setIsAdmin(false);
+        setAdminRole('viewer');
+        return;
       }
 
       setIsAdmin(!!adminData);

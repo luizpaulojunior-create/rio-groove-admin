@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, Link2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -8,8 +8,13 @@ import {
   saveStorefrontSection,
 } from '../services/storefrontCms';
 import { fetchSeoSettings, saveSeoSettings } from '../services/growthCms';
+import { shippingService } from '../services/shipping';
+import { useAuth } from '../contexts/AuthContext';
+import { hasMinRole, ADMIN_ROLES } from '../config/adminRoles';
 
 export default function Settings() {
+  const { adminRole } = useAuth();
+  const [connectingMe, setConnectingMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [brandingId, setBrandingId] = useState(null);
@@ -23,6 +28,23 @@ export default function Settings() {
   useEffect(() => {
     load();
   }, []);
+
+  const handleConnectMelhorEnvio = async () => {
+    if (!hasMinRole(adminRole, ADMIN_ROLES.SUPERADMIN)) {
+      toast.error('Apenas superadmin pode reconectar o Melhor Envio.');
+      return;
+    }
+    try {
+      setConnectingMe(true);
+      const { url } = await shippingService.startMelhorEnvioOAuth();
+      window.open(url, '_blank', 'noopener,noreferrer');
+      toast.info('Complete a autorização na janela do Melhor Envio.');
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message || 'Falha ao iniciar OAuth.');
+    } finally {
+      setConnectingMe(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -177,10 +199,23 @@ export default function Settings() {
           </h3>
           <div className="rounded-2xl border border-white/10 bg-black/30 p-5 text-sm text-[var(--color-text-muted)] leading-relaxed">
             <p className="text-white font-medium mb-2">Melhor Envio</p>
-            <p>
+            <p className="mb-4">
               Client ID e Client Secret são configurados no backend (Render), por segurança — não ficam editáveis
               aqui. Se precisar trocar, atualize as variáveis de ambiente no painel do Render.
             </p>
+            {hasMinRole(adminRole, ADMIN_ROLES.SUPERADMIN) ? (
+              <button
+                type="button"
+                onClick={handleConnectMelhorEnvio}
+                disabled={connectingMe}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF4D00] text-white text-sm font-medium hover:bg-[#e64500] disabled:opacity-50 transition-colors"
+              >
+                <Link2 size={16} />
+                {connectingMe ? 'Abrindo...' : 'Reconectar Melhor Envio'}
+              </button>
+            ) : (
+              <p className="text-xs text-white/40">Somente superadmin pode reconectar a integração.</p>
+            )}
           </div>
         </section>
       </div>
