@@ -18,6 +18,9 @@ export const AuthProvider = ({
   const [isAdmin, setIsAdmin] =
     useState(false);
 
+  const [adminRole, setAdminRole] =
+    useState('editor');
+
   const [loading, setLoading] =
     useState(true);
 
@@ -28,6 +31,7 @@ export const AuthProvider = ({
       if (!currentUser) {
         setUser(null);
         setIsAdmin(false);
+        setAdminRole('editor');
         return;
       }
 
@@ -49,7 +53,7 @@ export const AuthProvider = ({
       const adminPromise =
         supabase
           .from('admins')
-          .select('id')
+          .select('id, role')
           .eq('id', currentUser.id)
           .maybeSingle();
 
@@ -65,13 +69,14 @@ export const AuthProvider = ({
       } = result;
 
       if (adminError) {
-        console.error(
-          'Erro admin:',
-          adminError
-        );
+        console.error('Erro admin:', adminError);
+        setIsAdmin(false);
+        setAdminRole('viewer');
+        return;
       }
 
       setIsAdmin(!!adminData);
+      setAdminRole(adminData?.role || 'editor');
     } catch (err) {
       console.error(
         'Erro checkAdmin:',
@@ -79,6 +84,7 @@ export const AuthProvider = ({
       );
 
       setIsAdmin(false);
+      setAdminRole('editor');
     } finally {
       setLoading(false);
     }
@@ -113,6 +119,7 @@ export const AuthProvider = ({
 
         setUser(null);
         setIsAdmin(false);
+        setAdminRole('editor');
         setLoading(false);
       }
     };
@@ -124,17 +131,7 @@ export const AuthProvider = ({
     } =
       supabase.auth.onAuthStateChange(
         (_event, session) => {
-          if (session?.user) {
-            setUser(session.user);
-
-            // mantém admin validado
-            setIsAdmin(true);
-          } else {
-            setUser(null);
-            setIsAdmin(false);
-          }
-
-          setLoading(false);
+          checkAdmin(session?.user || null);
         }
       );
 
@@ -148,6 +145,7 @@ export const AuthProvider = ({
 
     setUser(null);
     setIsAdmin(false);
+    setAdminRole('editor');
   };
 
   return (
@@ -155,6 +153,7 @@ export const AuthProvider = ({
       value={{
         user,
         isAdmin,
+        adminRole,
         loading,
         signOut,
       }}

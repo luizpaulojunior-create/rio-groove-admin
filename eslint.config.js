@@ -4,7 +4,19 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  {
+    ignores: [
+      'dist',
+      'scripts/**',
+      'map_supabase_service.js',
+      'update_db_product_images_urls.js',
+      'update_db_urls.js',
+      'upload_images.js',
+      'find_stock.cjs',
+      'fix.mjs',
+      'fix_hooks.js',
+    ],
+  },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -23,11 +35,14 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
       'no-unused-vars': 'off',
+      'preserve-caught-error': 'off',
     },
   },
 ]

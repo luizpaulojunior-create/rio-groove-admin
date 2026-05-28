@@ -342,6 +342,16 @@ export default function StorefrontNavigation() {
                       <div className="bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-4">
                         <label className="block text-xs uppercase tracking-wider text-white border-b border-white/5 pb-2">Destaque Editorial (Opcional)</label>
                         <div>
+                          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Imagem Editorial (URL)</label>
+                          <input
+                            type="text"
+                            value={item.editorialImage || ''}
+                            onChange={(e) => updateMenuItem(item.id, 'editorialImage', e.target.value)}
+                            placeholder="https://..."
+                            className="w-full bg-[#0D0D0D] border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                          />
+                        </div>
+                        <div>
                           <label className="block text-xs text-[var(--color-text-muted)] mb-1">Frase Curta</label>
                           <input 
                             type="text" 

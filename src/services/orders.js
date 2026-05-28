@@ -5,7 +5,7 @@ const STATUS_MAP = {
   pending: 'aguardando_pagamento',
   paid: 'pagamento_aprovado',
   approved: 'pagamento_aprovado',
-  reserved: 'estoque_reservado',
+  reserved: 'aguardando_producao',
   production_pending: 'aguardando_producao',
   in_production: 'em_producao',
   production_done: 'producao_concluida',
@@ -50,14 +50,49 @@ const TIMELINE_STEPS = {
   cancelado: -1
 };
 
+function resolveItemPrice(item) {
+  const meta = item?.metadata_json || item?.raw || {};
+  const qty = Number(item?.quantity || 1);
+  const lineTotal = Number(item?.line_total || item?.lineTotal || meta?.lineTotal || meta?.line_total || 0);
+  let price = Number(
+    item?.unit_price ||
+      item?.unitPrice ||
+      item?.price ||
+      meta?.unitPrice ||
+      meta?.unit_price ||
+      meta?.price ||
+      0,
+  );
+  if (price <= 0 && lineTotal > 0 && qty > 0) {
+    price = lineTotal / qty;
+  }
+  return price;
+}
+
+function resolveShippingAmount(order, raw, shipping) {
+  const amount =
+    order?.shipping_amount ??
+    raw?.shipping?.price ??
+    raw?.totals?.shipping ??
+    shipping?.price;
+  const parsed = Number(amount);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function normalizeStatus(order) {
   if (!order) return 'aguardando_pagamento';
 
-  let rawStatus = 
+  if (order.fulfillment_status && STATUS_LABELS[order.fulfillment_status]) {
+    if (order.fulfillment_status === 'estoque_reservado') {
+      return 'aguardando_producao';
+    }
+    return order.fulfillment_status;
+  }
+
+  let rawStatus =
     order.status ||
     order.order_status ||
     order.payment_status ||
-    order.fulfillment_status ||
     order.shipping_status ||
     order.state ||
     order.current_status ||
@@ -88,29 +123,162 @@ function normalizeStatus(order) {
   }
   
   if (Object.values(STATUS_MAP).includes(normalizedRaw)) {
+    if (normalizedRaw === 'estoque_reservado') {
+      return 'aguardando_producao';
+    }
     return normalizedRaw;
+  }
+
+  if (order.payment_status === 'paid' || order.paid_at) {
+    return 'pagamento_aprovado';
   }
 
   return 'aguardando_pagamento';
 }
 
+function mapOrderItem(item) {
+  const meta = item?.metadata_json || {};
+  const name = String(
+    item?.product_name ||
+      item?.productName ||
+      item?.title ||
+      item?.name ||
+      item?.product?.name ||
+      meta?.productName ||
+      meta?.name ||
+      'Produto',
+  );
+  const price = resolveItemPrice(item);
+  const sku = String(item?.sku || meta?.sku || 'N/A');
+  const image =
+    item?.image_url ||
+    item?.imageUrl ||
+    item?.image ||
+    meta?.imageUrl ||
+    meta?.image_url ||
+    item?.product?.images?.[0]?.url ||
+    item?.product?.images?.[0] ||
+    '';
+
+  return {
+    id: item?.id || crypto.randomUUID(),
+    title: name,
+    name,
+    image: typeof image === 'string' ? image : '',
+    quantity: Number(item?.quantity || 1),
+    price,
+    unit_price: price,
+    size: String(item?.size || '-'),
+    color: String(item?.color || '-'),
+    sku,
+    estamp: String(item?.side || meta?.side || item?.product?.printType || 'Frente'),
+    stock_status: 'Pendente',
+    product: {
+      name,
+      sku,
+      printType: String(item?.side || meta?.side || item?.product?.printType || 'Frente'),
+      images: Array.isArray(item?.product?.images) ? item.product.images : image ? [image] : [],
+    },
+  };
+}
+
+function mapOrderItems(order, raw) {
+  if (Array.isArray(order?.order_items) && order.order_items.length > 0) {
+    return order.order_items.map(mapOrderItem);
+  }
+
+  const payloadItems = raw?.items;
+  if (Array.isArray(payloadItems) && payloadItems.length > 0) {
+    return payloadItems.map(mapOrderItem);
+  }
+
+  if (Array.isArray(order?.items) && order.items.length > 0) {
+    return order.items.map(mapOrderItem);
+  }
+
+  return [];
+}
+
+function mapOrderLogs(order) {
+  const source = order?.order_logs || order?.logs;
+  if (Array.isArray(source) && source.length > 0) {
+    return source.map((log, idx) => ({
+      id: log?.id || idx,
+      message: String(log?.message || log?.action || 'Atualização'),
+      action: String(log?.action || log?.message || 'Atualização'),
+      created_at: String(log?.created_at || log?.createdAt || new Date().toISOString()),
+      createdAt: String(log?.createdAt || log?.created_at || new Date().toISOString()),
+      user: String(log?.user || 'Sistema'),
+      details: String(log?.details || log?.description || ''),
+    }));
+  }
+
+  return [
+    {
+      id: 1,
+      message: 'Pedido criado',
+      action: 'Pedido criado',
+      created_at: String(order?.created_at || order?.createdAt || new Date().toISOString()),
+      createdAt: String(order?.created_at || order?.createdAt || new Date().toISOString()),
+      user: 'Sistema',
+    },
+    ...(order?.paid_at
+      ? [
+          {
+            id: 2,
+            message: 'Pagamento aprovado',
+            action: 'Pagamento aprovado',
+            created_at: String(order.paid_at),
+            createdAt: String(order.paid_at),
+            user: 'Mercado Pago',
+          },
+        ]
+      : []),
+  ];
+}
+
+export function isPickupOrder(order) {
+  const method = String(
+    order?.shipping_method ||
+      order?.shippingMethod ||
+      order?.raw_checkout_payload?.shipping?.label ||
+      '',
+  ).toLowerCase();
+  return method.includes('retirada');
+}
+
+function parseRawPayload(order) {
+  const raw = order?.raw_checkout_payload;
+  if (!raw) return {};
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return raw;
+}
+
 function normalizeOrder(order) {
   if (!order || typeof order !== 'object') return {};
   
-  const raw =
-    order?.raw_checkout_payload || {};
+  const raw = parseRawPayload(order);
 
-  const address =
-    raw?.address || order?.address || order?.shippingInfo || {};
+  const address = {
+    cep: String(order?.shipping_cep || raw?.address?.cep || raw?.address?.zipCode || '-'),
+    street: String(order?.shipping_street || raw?.address?.street || raw?.address?.address || '-'),
+    number: String(order?.shipping_number || raw?.address?.number || '-'),
+    complement: String(order?.shipping_complement || raw?.address?.complement || ''),
+    neighborhood: String(order?.shipping_neighborhood || raw?.address?.neighborhood || '-'),
+    city: String(order?.shipping_city || raw?.address?.city || '-'),
+    state: String(order?.shipping_state || raw?.address?.state || '-'),
+  };
 
-  const customer =
-    raw?.customer || order?.customer || {};
-
-  const shipping =
-    raw?.shipping || order?.shippingInfo || {};
-
-  const rawItems = raw?.items || order?.items;
-  const items = Array.isArray(rawItems) ? rawItems : [];
+  const customer = raw?.customer || order?.customer || {};
+  const shipping = raw?.shipping || order?.shippingInfo || {};
+  const items = mapOrderItems(order, raw);
+  const shippingAmount = resolveShippingAmount(order, raw, shipping);
 
   const total =
     Number(
@@ -187,8 +355,9 @@ function normalizeOrder(order) {
 
     // STATUS
     status: normalizedStatus,
+    fulfillment_status: normalizedStatus,
     statusLabel: STATUS_LABELS[normalizedStatus] || 'Desconhecido',
-    timelineStep: TIMELINE_STEPS[normalizedStatus] !== undefined ? TIMELINE_STEPS[normalizedStatus] : 0,
+    timelineStep: normalizedStatus,
     payment_status: String(paymentStatus),
     shipping_status: String(shippingStatus),
     production_status: String(productionStatus),
@@ -227,75 +396,31 @@ CEP: ${address?.cep || '-'}
 `.trim(),
 
     // ENVIO
-    shipping_method:
-      shipping?.label ||
-      'Correios/Jadlog',
+    shipping_method: order?.shipping_method || shipping?.label || raw?.shipping?.label || 'Correios/Jadlog',
 
-    shipping_deadline:
-      shipping?.deadline ||
-      '-',
+    shipping_deadline: order?.shipping_deadline || shipping?.deadline || raw?.shipping?.deadline || '-',
 
-    shipping_amount:
-      shipping?.price ||
-      0,
+    shipping_amount: shippingAmount,
 
-    tracking_code:
-      order?.tracking_code ||
-      '',
+    shipping_price: shippingAmount,
 
-    // ITENS
-    items: items.map((item) => ({
-      id: item?.id || crypto.randomUUID(),
-      title: String(item?.title || item?.name || item?.product?.name || 'Produto'),
-      name: String(item?.title || item?.name || item?.product?.name || 'Produto'),
-      image: typeof item?.image === 'string' ? item.image : (item?.product?.images?.[0]?.url || item?.product?.images?.[0] || ''),
-      quantity: Number(item?.quantity || 1),
-      price: Number(item?.price || item?.unit_price || 0),
-      size: String(item?.size || '-'),
-      color: String(item?.color || '-'),
-      sku: String(item?.sku || item?.product?.sku || 'N/A'),
-      estamp: String(item?.side || item?.product?.printType || 'Frente'),
-      stock_status: 'Pendente',
-      product: {
-        name: String(item?.title || item?.name || item?.product?.name || 'Produto'),
-        sku: String(item?.sku || item?.product?.sku || 'N/A'),
-        printType: String(item?.side || item?.product?.printType || 'Frente'),
-        images: Array.isArray(item?.product?.images) ? item.product.images : []
-      }
-    })),
+    shippingInfo: {
+      method: order?.shipping_method || shipping?.label || raw?.shipping?.label || '',
+      price: shippingAmount,
+      address: address.street,
+      city: address.city,
+      state: address.state,
+      zipCode: address.cep,
+    },
 
-    logs: Array.isArray(order?.logs) && order.logs.length > 0 
-      ? order.logs.map((log, idx) => ({
-          id: log?.id || idx,
-          message: String(log?.message || log?.action || 'Atualização'),
-          action: String(log?.action || log?.message || 'Atualização'),
-          created_at: String(log?.created_at || log?.createdAt || new Date().toISOString()),
-          createdAt: String(log?.createdAt || log?.created_at || new Date().toISOString()),
-          user: String(log?.user || 'Sistema'),
-          details: String(log?.details || log?.description || '')
-        }))
-      : [
-          {
-            id: 1,
-            message: 'Pedido criado',
-            action: 'Pedido criado',
-            created_at: String(order?.created_at || order?.createdAt || new Date().toISOString()),
-            createdAt: String(order?.created_at || order?.createdAt || new Date().toISOString()),
-            user: 'Sistema',
-          },
-          ...(order?.paid_at
-            ? [
-                {
-                  id: 2,
-                  message: 'Pagamento aprovado',
-                  action: 'Pagamento aprovado',
-                  created_at: String(order?.paid_at),
-                  createdAt: String(order?.paid_at),
-                  user: 'Mercado Pago',
-                },
-              ]
-            : []),
-        ],
+    tracking_code: order?.shipping_tracking_code || order?.tracking_code || '',
+    trackingCode: order?.shipping_tracking_code || order?.tracking_code || '',
+    shipping_label_url: order?.shipping_label_url || '',
+    melhor_envio_shipment_id: order?.melhor_envio_shipment_id || '',
+
+    items,
+
+    logs: mapOrderLogs(order),
   };
 }
 
@@ -367,18 +492,9 @@ export const ordersService = {
     return data;
   },
 
-  async updateOrderStatus(
-    id,
-    status,
-    extraData = {}
-  ) {
-    const { data } =
-      await api.put(
-        `/orders/${id}/status`,
-        { status, ...extraData }
-      );
-
-    return data;
+  async updateOrderStatus(id, status, extraData = {}) {
+    const { data } = await api.put(`/orders/${id}/status`, { status, ...extraData });
+    return normalizeOrder(data?.order || data);
   },
 
   async deleteOrder(id) {

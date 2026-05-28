@@ -10,6 +10,7 @@ export const STORAGE_PATHS = {
   BRANDING: 'storefront/branding',
   BANNERS: 'storefront/banners',
   EDITORIAL: 'storefront/editorial',
+  ARTISTS: 'storefront/artists',
   CAMPAIGNS: 'campaigns',
   COLLECTIONS: 'collections',
   PRODUCTS: 'products',

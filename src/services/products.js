@@ -8,6 +8,38 @@ const normalizeArrayField = (value) => {
   return String(value).split(',').map(item => item.trim()).filter(Boolean);
 };
 
+function appendImagesToFormData(formData, images) {
+  const newImageMeta = [];
+
+  images.forEach((image, index) => {
+    if (image.file instanceof File) {
+      formData.append('images', image.file);
+      newImageMeta.push({
+        color_key: image.color_key || '',
+        isMain: Boolean(image.isMain),
+        sort_order: image.position ?? index,
+      });
+    } else if (image.url || image.image_url || image.preview) {
+      formData.append('existing_images', JSON.stringify({
+        id: image.id,
+        image_url: image.image_url || image.url || image.preview,
+        url: image.url || image.image_url || image.preview,
+        preview: image.preview || image.image_url || image.url,
+        color_key: image.color_key || '',
+        color_variant: image.color_variant || '',
+        alt_text: image.alt_text || '',
+        isMain: Boolean(image.isMain),
+        sort_order: image.position ?? image.sort_order ?? index,
+        position: image.position ?? image.sort_order ?? index,
+      }));
+    }
+  });
+
+  if (newImageMeta.length > 0) {
+    formData.append('new_image_meta', JSON.stringify(newImageMeta));
+  }
+}
+
 export const productsService = {
   async getProducts() {
     try {
@@ -31,7 +63,7 @@ export const productsService = {
     const images = dataObj.images || [];
 
     const formData = new FormData();
-    
+
     Object.keys(dataObj).forEach(key => {
       if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
@@ -55,13 +87,11 @@ export const productsService = {
       formData.append('colors', JSON.stringify(dataObj.colors));
     }
 
-    images.forEach(image => {
-      if (image.file instanceof File) {
-        formData.append('images', image.file);
-      } else if (image.url || image.image_url || image.preview) {
-        formData.append('existing_images', JSON.stringify(image));
-      }
-    });
+    if (dataObj.tags) {
+      formData.append('tags', typeof dataObj.tags === 'string' ? dataObj.tags : JSON.stringify(dataObj.tags));
+    }
+
+    appendImagesToFormData(formData, images);
 
     try {
       const { data } = await api.post('/products', formData);
@@ -75,7 +105,7 @@ export const productsService = {
     const images = dataObj.images;
 
     const formData = new FormData();
-    
+
     Object.keys(dataObj).forEach(key => {
       if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
@@ -99,15 +129,13 @@ export const productsService = {
       formData.append('colors', JSON.stringify(dataObj.colors));
     }
 
+    if (dataObj.tags) {
+      formData.append('tags', typeof dataObj.tags === 'string' ? dataObj.tags : JSON.stringify(dataObj.tags));
+    }
+
     if (images !== undefined) {
       formData.append('images_updated', 'true');
-      images.forEach(image => {
-        if (image.file instanceof File) {
-          formData.append('images', image.file);
-        } else if (image.url || image.image_url || image.preview) {
-          formData.append('existing_images', JSON.stringify(image));
-        }
-      });
+      appendImagesToFormData(formData, images);
     } else {
       formData.append('images_updated', 'false');
     }

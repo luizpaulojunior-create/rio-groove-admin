@@ -15,7 +15,10 @@ import {
   Search,
   Ticket,
   X,
-  Layout
+  Layout,
+  Type,
+  Mic2,
+  UserPlus
 } from 'lucide-react';
 
 const menuItems = [
@@ -31,9 +34,11 @@ const menuItems = [
 
 const growthItems = [
   { path: '/admin/storefront', name: 'Storefront', icon: Layout },
+  { path: '/admin/editorial', name: 'Editorial', icon: Type },
+  { path: '/admin/artists', name: 'Artistas', icon: Mic2 },
   { path: '/admin/campaigns', name: 'Campanhas', icon: Megaphone },
   { path: '/admin/newsletter', name: 'Newsletter', icon: Mail },
-  { path: '/admin/affiliates', name: 'Afiliados', icon: Users },
+  { path: '/admin/affiliates', name: 'Afiliados', icon: UserPlus },
   { path: '/admin/seo', name: 'SEO', icon: Search },
 ];
 

@@ -3,19 +3,17 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { 
   Truck, Package, Clock, CheckCircle2, AlertCircle, 
-  Loader2, FileText, XCircle, Printer, Copy, 
+  Loader2, FileText, XCircle, Printer, Copy, Download,
   Settings, ArrowRight, Search, Filter 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { ordersService } from '../services/orders';
+import { ordersService, isPickupOrder } from '../services/orders';
 import { shippingService } from '../services/shipping';
-import { stockService } from '../services/stock';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
 const TIMELINE_STEPS = [
   { id: 'aguardando_pagamento', label: 'Aguardando Pagamento' },
   { id: 'pagamento_aprovado', label: 'Pagamento Aprovado' },
-  { id: 'estoque_reservado', label: 'Estoque Reservado' },
   { id: 'aguardando_producao', label: 'Aguardando Produção' },
   { id: 'em_producao', label: 'Em Produção' },
   { id: 'producao_concluida', label: 'Produção Concluída' },
@@ -29,6 +27,10 @@ const TIMELINE_STEPS = [
 
 const STATUS_MAP = {
   'pending': 'aguardando_pagamento',
+  'pending_payment': 'aguardando_pagamento',
+  'awaiting_payment': 'aguardando_pagamento',
+  'created': 'aguardando_pagamento',
+  'paid': 'pagamento_aprovado',
   'processing': 'preparando_envio',
   'preparando': 'preparando_envio',
   'shipped': 'em_transito',
@@ -37,10 +39,12 @@ const STATUS_MAP = {
 };
 
 const STOCK_DEDUCTED_STATUSES = [
-  'estoque_reservado', 'aguardando_producao', 'em_producao', 
-  'producao_concluida', 'preparando_envio', 'etiqueta_gerada', 
+  'pagamento_aprovado', 'aguardando_producao', 'em_producao',
+  'producao_concluida', 'preparando_envio', 'etiqueta_gerada',
   'postado', 'em_transito', 'saiu_para_entrega', 'entregue',
-  'processing', 'preparando', 'shipped', 'delivered'
+  'processing', 'preparando', 'shipped', 'delivered',
+  // legado — pedidos que passaram pela etapa antiga
+  'estoque_reservado',
 ];
 
 export default function Orders() {
@@ -79,7 +83,7 @@ if (
 }
     if (statusFilter !== 'all') {
       result = result.filter(order => {
-        const normalizedStatus = STATUS_MAP[order.status] || order.status;
+        const normalizedStatus = STATUS_MAP[order.fulfillment_status || order.status] || order.fulfillment_status || order.status;
         return normalizedStatus === statusFilter;
       });
     }
@@ -118,7 +122,10 @@ if (
 
   const getOrderActiveIndex = (order) => {
     if (!order) return 0;
-    const normStatus = getNormalizedStatus(order.timelineStep || order.status);
+    let normStatus = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
+    if (normStatus === 'estoque_reservado') {
+      normStatus = 'aguardando_producao';
+    }
     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
     let activeIdx = TIMELINE_STEPS.findIndex(s => s.id === normStatus);
     if (isCancelled || activeIdx === -1) {
@@ -166,7 +173,7 @@ if (
     setIsModalOpen(true);
 
     // Tracking automático ao abrir pedido (referência = id do pedido, não código de rastreio)
-    const norm = getNormalizedStatus(order.timelineStep || order.status);
+    const norm = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
 
     if (order.id && !['entregue', 'cancelado'].includes(norm)) {
       try {
@@ -185,43 +192,11 @@ if (
     if (isProcessing) return;
     try {
       setIsProcessing(true);
-      
-      const currentOrder = orders.find(o => o.id === orderId) || selectedOrder;
-
-      const normalizeColor = (c) => String(c || '').toLowerCase().trim().replace(/preto/g, 'preta');
-      const normalizeSize = (s) => String(s || '').toUpperCase().trim();
-
-      if (newStatus === 'estoque_reservado' && currentOrder) {
-        const stockItems = await stockService.getStock();
-        const itemsToProcess = currentOrder.items || [];
-        
-        for (const item of itemsToProcess) {
-          if (!item.color || !item.size || item.color === '-' || item.size === '-') continue;
-          
-          const stockItem = stockItems.find(
-            s => normalizeColor(s.color) === normalizeColor(item.color) && normalizeSize(s.size) === normalizeSize(item.size)
-          );
-          
-          if (!stockItem) {
-             toast.error(`Falta de Estoque: Lote para a cor ${item.color} e tamanho ${item.size} não encontrado.`);
-             setIsProcessing(false);
-             return;
-          }
-          
-          if (stockItem.quantity <= 0 || stockItem.quantity < item.quantity) {
-             toast.error(`Falta de Estoque: Apenas ${stockItem.quantity} disponíveis de ${item.color} - ${item.size}.`);
-             setIsProcessing(false);
-             return;
-          }
-        }
-      }
 
       const stepLabel = TIMELINE_STEPS.find(s => s.id === newStatus)?.label || newStatus;
       let logMsg = customLogMessage;
       if (!logMsg) {
-        if (newStatus === 'estoque_reservado') {
-          logMsg = 'Estoque reservado automaticamente';
-        } else if (newStatus === 'em_producao') {
+        if (newStatus === 'em_producao') {
           logMsg = 'Pedido entrou em produção';
         } else if (newStatus === 'cancelado') {
           logMsg = 'Pedido cancelado';
@@ -232,87 +207,27 @@ if (
 
       const loadingToast = toast.loading(`Atualizando para ${stepLabel}...`, { toastId: `update-status-${orderId}` });
       
-      await ordersService.updateOrderStatus(orderId, newStatus, extraData);
-      
-      if (newStatus === 'estoque_reservado' && currentOrder) {
-        toast.update(loadingToast, { render: 'Reservando estoque...', type: 'info', isLoading: true });
-        const stockItems = await stockService.getStock();
-        const itemsToProcess = currentOrder.items || [];
-        
-        for (const item of itemsToProcess) {
-          if (!item.color || !item.size || item.color === '-' || item.size === '-') continue;
-          const stockItem = stockItems.find(
-            s => normalizeColor(s.color) === normalizeColor(item.color) && normalizeSize(s.size) === normalizeSize(item.size)
-          );
-          if (stockItem) {
-            try {
-              await stockService.adjustStock(stockItem.id, -item.quantity, `Reserva Pedido #${orderId}`);
-            } catch (stockError) {
-              console.error(`Falha ao reservar estoque para item ${item.product?.name}:`, stockError);
-              toast.error(`Falha ao reservar estoque para ${item.product?.name || 'item'}`);
-            }
-          }
-        }
-      }
-
-      if (newStatus === 'cancelado' && currentOrder) {
-        toast.update(loadingToast, { render: 'Cancelando pedido e processando devoluções...', type: 'info', isLoading: true });
-        const normStatus = getNormalizedStatus(currentOrder.status);
-        if (STOCK_DEDUCTED_STATUSES.includes(normStatus)) {
-          const stockItems = await stockService.getStock();
-          const itemsToProcess = currentOrder.items || [];
-          for (const item of itemsToProcess) {
-            if (!item.color || !item.size || item.color === '-' || item.size === '-') continue;
-            const stockItem = stockItems.find(
-              s => normalizeColor(s.color) === normalizeColor(item.color) && normalizeSize(s.size) === normalizeSize(item.size)
-            );
-            if (stockItem) {
-              try {
-                await stockService.adjustStock(stockItem.id, item.quantity, `Devolução Cancelamento #${orderId}`);
-              } catch (stockError) {
-                 console.error(`Erro ao devolver estoque para ${item.product?.name}:`, stockError);
-              }
-            }
-          }
-        }
-      }
+      const updatedOrder = await ordersService.updateOrderStatus(orderId, newStatus, {
+        ...extraData,
+        log_message: logMsg,
+      });
 
       toast.update(loadingToast, { render: `Status atualizado para: ${stepLabel}`, type: 'success', isLoading: false, autoClose: 3000 });
-      
-      const newLog = {
-        id: Date.now(),
-        action: logMsg,
-        message: logMsg,
-        createdAt: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        user: 'Operador / Sistema',
+
+      const mergedOrder = {
+        ...updatedOrder,
+        ...extraData,
+        tracking_code: extraData.tracking_code || updatedOrder.tracking_code,
+        trackingCode: extraData.tracking_code || updatedOrder.trackingCode,
       };
 
-      setOrders(prevOrders => prevOrders.map(order => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            status: newStatus,
-            timelineStep: newStatus,
-            ...extraData,
-            logs: [...(order.logs || []), newLog]
-          };
-        }
-        return order;
-      }));
+      setOrders(prevOrders => prevOrders.map(order => (
+        order.id === orderId ? mergedOrder : order
+      )));
       
-      setSelectedOrder(prev => {
-        if (prev && prev.id === orderId) {
-          return {
-            ...prev,
-            status: newStatus,
-            timelineStep: newStatus,
-            ...extraData,
-            logs: [...(prev.logs || []), newLog]
-          };
-        }
-        return prev;
-      });
+      setSelectedOrder(prev => (
+        prev && prev.id === orderId ? mergedOrder : prev
+      ));
 
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -330,7 +245,7 @@ if (
 
   const handleCancelOrder = () => {
     if (isProcessing) return;
-    if (!window.confirm('Deseja realmente cancelar este pedido? O estoque será devolvido caso já tenha sido baixado.')) {
+    if (!window.confirm('Deseja realmente cancelar este pedido?')) {
       return;
     }
     updateOrderStatus(selectedOrder.id, 'cancelado');
@@ -346,6 +261,67 @@ if (
       toast.success('Rastreamento salvo!');
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const refreshSelectedOrder = async (orderId) => {
+    const refreshed = await ordersService.getOrder(orderId);
+    if (!refreshed) return null;
+    setSelectedOrder(refreshed);
+    setManualTrackingCode(refreshed.trackingCode || refreshed.tracking_code || '');
+    setOrders((prev) => prev.map((order) => (order.id === orderId ? refreshed : order)));
+    return refreshed;
+  };
+
+  const handleDownloadLabelPdf = async () => {
+    if (!selectedOrder?.id || isProcessing) return;
+    const loadingToast = toast.loading('Baixando etiqueta...', { toastId: 'download-label' });
+    try {
+      setIsProcessing(true);
+      const filename = `etiqueta-pedido-${selectedOrder.order_number || selectedOrder.id}.pdf`;
+      const result = await shippingService.downloadLabelPdf(selectedOrder.id, filename);
+      toast.update(loadingToast, {
+        render: result.downloaded ? 'PDF baixado!' : 'Etiqueta aberta em nova aba.',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.dismiss('download-label');
+      toast.error(error?.response?.data?.message || error.message || 'Falha ao baixar etiqueta.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGenerateLabel = async () => {
+    if (!selectedOrder?.id || isProcessing) return;
+    const loadingToast = toast.loading('Gerando etiqueta no Melhor Envio...', { toastId: 'generate-label' });
+    try {
+      setIsProcessing(true);
+      await shippingService.fulfillLabel(selectedOrder.id);
+      const refreshed = await refreshSelectedOrder(selectedOrder.id);
+      toast.update(loadingToast, { render: 'Etiqueta gerada! Baixando PDF...', type: 'info', isLoading: true });
+      try {
+        const filename = `etiqueta-pedido-${refreshed?.order_number || selectedOrder.id}.pdf`;
+        await shippingService.downloadLabelPdf(selectedOrder.id, filename);
+        toast.update(loadingToast, { render: 'Etiqueta gerada e PDF baixado!', type: 'success', isLoading: false, autoClose: 4000 });
+      } catch (pdfError) {
+        console.warn('PDF imediato indisponível', pdfError);
+        toast.update(loadingToast, {
+          render: 'Etiqueta gerada. Use "Baixar PDF" se o download não iniciou.',
+          type: 'success',
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.dismiss('generate-label');
+      toast.error(error?.response?.data?.message || error.message || 'Falha ao gerar etiqueta.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -367,10 +343,6 @@ if (
     }
     
     if (stepId === 'pagamento_aprovado') {
-      actions.push(<button key="er" onClick={() => handleUpdateStatus('estoque_reservado')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Package size={18} />Reservar Estoque</button>);
-    }
-
-    if (stepId === 'estoque_reservado') {
       actions.push(<button key="aprod" onClick={() => handleUpdateStatus('aguardando_producao')} disabled={isProcessing} className="w-full h-12 bg-[#EAB308] text-black rounded-2xl text-[14px] font-medium hover:bg-[#dca506] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"><ArrowRight size={18} />Enviar para Produção</button>);
     }
 
@@ -386,8 +358,39 @@ if (
       actions.push(<button key="pe" onClick={() => handleUpdateStatus('preparando_envio')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Package size={18} />Preparar Envio</button>);
     }
 
-    if (stepId === 'preparando_envio') {
-      actions.push(<button key="ge" onClick={() => window.open('https://melhorenvio.com.br/carrinho', '_blank')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Printer size={18} />Gerar Etiqueta</button>);
+    if (stepId === 'preparando_envio' && !isPickupOrder(selectedOrder)) {
+      actions.push(
+        <button key="gl" onClick={handleGenerateLabel} disabled={isProcessing} className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+          <Printer size={18} />Gerar Etiqueta (PDF)
+        </button>,
+        <button
+          key="ge"
+          onClick={() => {
+            window.open('https://melhorenvio.com.br/carrinho', '_blank');
+            toast.info('Após pagar no Melhor Envio, volte e clique em "Gerar Etiqueta".', { autoClose: 6000 });
+          }}
+          disabled={isProcessing}
+          className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"
+        >
+          <Package size={18} />Carrinho Melhor Envio
+        </button>,
+      );
+    }
+
+    const hasLabel = Boolean(
+      selectedOrder.shipping_label_url ||
+      selectedOrder.shipping_status === 'label_generated' ||
+      selectedOrder.fulfillment_status === 'etiqueta_gerada' ||
+      selectedOrder.tracking_code ||
+      selectedOrder.trackingCode,
+    );
+    const labelReadySteps = ['etiqueta_gerada', 'postado', 'em_transito', 'saiu_para_entrega', 'entregue'];
+    if (!isPickupOrder(selectedOrder) && hasLabel && labelReadySteps.includes(stepId)) {
+      actions.push(
+        <button key="dl" onClick={handleDownloadLabelPdf} disabled={isProcessing} className="w-full h-12 bg-[#050505] border border-[rgba(255,255,255,0.12)] text-white rounded-2xl text-[14px] font-medium hover:border-[#22C55E]/40 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50">
+          <Download size={18} />Baixar PDF da Etiqueta
+        </button>,
+      );
     }
 
     return actions;
@@ -558,11 +561,11 @@ if (
                 
                 <div className="relative flex justify-between items-start px-2 overflow-x-auto pb-6 custom-scrollbar">
                   {(() => {
-                    const normStatus = getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status);
+                    const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
                     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                     const activeIdx = getOrderActiveIndex(selectedOrder);
 
-                    const opSteps = TIMELINE_STEPS.slice(0, 8); // Até Etiqueta Gerada
+                    const opSteps = TIMELINE_STEPS.slice(0, 7); // Até Etiqueta Gerada
 
                     return opSteps.map((step, idx) => {
                       const isCompleted = idx < activeIdx;
@@ -635,8 +638,8 @@ if (
                           </div>
                           <div>
                             <span className="block font-sans text-[10px] uppercase text-white/50 mb-0.5 tracking-wider">Estoque Base</span>
-                            <span className={`font-sans text-[14px] ${STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status)) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
-                              {STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status)) ? 'Baixado' : 'Pendente'}
+                            <span className={`font-sans text-[14px] ${(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status))) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
+                              {(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status))) ? 'Baixado' : 'Pendente'}
                             </span>
                           </div>
                         </div>
@@ -649,21 +652,39 @@ if (
                 </div>
               </div>
 
-              {/* 3. ACOMPANHAMENTO DA ENTREGA */}
+              {/* 3. ACOMPANHAMENTO DA ENTREGA / RETIRADA */}
               {(() => {
-                const normStatus = getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status);
+                if (isPickupOrder(selectedOrder)) {
+                  const activeIdx = getOrderActiveIndex(selectedOrder);
+                  const isPaid = activeIdx >= 1;
+
+                  return (
+                    <div className="bg-[#0D0D0D] border border-[#FF4D00]/20 rounded-[24px] p-6 shadow-sm">
+                      <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-white mb-4">
+                        Retirada no Rio de Janeiro
+                      </h2>
+                      <p className="font-sans text-[14px] text-white/70 leading-relaxed">
+                        {isPaid
+                          ? 'Pagamento confirmado. Combine data, horário e local da retirada com o cliente pelo WhatsApp.'
+                          : 'Pedido com retirada presencial. Após confirmação do pagamento, alinhe a retirada diretamente com o cliente.'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
-                const isAfterEtiqueta = activeIdx >= 7 && !isCancelled;
+                const isAfterEtiqueta = activeIdx >= 6 && !isCancelled;
                 
                 return (
                   <div className={`bg-[#0D0D0D] border border-[rgba(255,255,255,0.06)] rounded-[24px] p-6 shadow-sm transition-all duration-500 ${isAfterEtiqueta ? 'ring-1 ring-[#22C55E]/30 shadow-[0_0_30px_rgba(34,197,94,0.05)]' : 'opacity-80'}`}>
                     <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-white mb-6">Acompanhamento da Entrega</h2>
                     
                     <div className="space-y-0 pl-2">
-                      {TIMELINE_STEPS.slice(8).map((step, relativeIdx, arr) => {
-                        const idx = relativeIdx + 8;
+                      {TIMELINE_STEPS.slice(7).map((step, relativeIdx, arr) => {
+                        const idx = relativeIdx + 7;
                         const isCompleted = idx < activeIdx;
                         const isCurrent = !isCancelled && idx === activeIdx;
                         const isCancelledStep = isCancelled && idx === activeIdx;
@@ -713,7 +734,7 @@ if (
               
               {/* 1. AÇÕES OPERACIONAIS */}
               {(() => {
-                const normStatus = getNormalizedStatus(selectedOrder.timelineStep || selectedOrder.status);
+                const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
@@ -749,7 +770,19 @@ if (
                 
                 <div className="space-y-4">
                   <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)] flex flex-col gap-3">
-                    <span className="block font-sans text-[10px] uppercase text-white/50 tracking-wider">Código de Rastreio</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="block font-sans text-[10px] uppercase text-white/50 tracking-wider">Código de Rastreio</span>
+                      {!isPickupOrder(selectedOrder) && (selectedOrder.trackingCode || selectedOrder.tracking_code || selectedOrder.melhor_envio_shipment_id) && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadLabelPdf}
+                          disabled={isProcessing}
+                          className="inline-flex items-center gap-1.5 text-[11px] text-[#22C55E] hover:text-[#1ea951] disabled:opacity-50"
+                        >
+                          <Download size={12} /> Baixar PDF
+                        </button>
+                      )}
+                    </div>
                     <div className="flex gap-2 items-center">
                       {selectedOrder.trackingCode || selectedOrder.tracking_code ? (
                         <p className="font-sans text-[18px] text-white font-bold tracking-widest">{selectedOrder.trackingCode || selectedOrder.tracking_code}</p>
@@ -781,17 +814,25 @@ if (
                     </div>
                     <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)]">
                       <span className="block font-sans text-[10px] uppercase text-white/50 mb-1 tracking-wider">Valor do Frete</span>
-                      <p className="font-sans text-[14px] text-white font-medium">R$ {Number(selectedOrder.shippingInfo?.price || selectedOrder.shipping_price || selectedOrder.shippingPrice || 0).toFixed(2)}</p>
+                      <p className="font-sans text-[14px] text-white font-medium">R$ {Number(selectedOrder.shipping_amount ?? selectedOrder.shipping_price ?? selectedOrder.shippingInfo?.price ?? 0).toFixed(2)}</p>
                     </div>
                   </div>
 
                   <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)]">
                     <span className="block font-sans text-[10px] uppercase text-white/50 mb-1 tracking-wider">Endereço de Entrega</span>
-                    <p className="font-sans text-[14px] text-white/80 leading-relaxed mt-2">
-                      {String(selectedOrder.shippingInfo?.address || selectedOrder.shipping_street || selectedOrder.address?.street || 'Não informado')}
-                      {String(selectedOrder.shipping_number || selectedOrder.address?.number ? `, ${selectedOrder.shipping_number || selectedOrder.address?.number}` : '')}<br/>
-                      {String(selectedOrder.shippingInfo?.city || selectedOrder.shipping_city || selectedOrder.address?.city || '-')} - {String(selectedOrder.shippingInfo?.state || selectedOrder.shipping_state || selectedOrder.address?.state || '-')}<br/>
-                      CEP: {String(selectedOrder.shippingInfo?.zipCode || selectedOrder.shipping_cep || selectedOrder.address?.cep || '-')}
+                    <p className="font-sans text-[14px] text-white/80 leading-relaxed mt-2 whitespace-pre-line">
+                      {selectedOrder.shipping_address || (
+                        <>
+                          {String(selectedOrder.shipping_street || selectedOrder.address?.street || 'Não informado')}
+                          {selectedOrder.shipping_number || selectedOrder.address?.number ? `, ${selectedOrder.shipping_number || selectedOrder.address?.number}` : ''}
+                          {'\n'}
+                          {String(selectedOrder.shipping_neighborhood || selectedOrder.address?.neighborhood || '-')}
+                          {'\n'}
+                          {String(selectedOrder.shipping_city || selectedOrder.address?.city || '-')} - {String(selectedOrder.shipping_state || selectedOrder.address?.state || '-')}
+                          {'\n'}
+                          CEP: {String(selectedOrder.shipping_cep || selectedOrder.address?.cep || '-')}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>

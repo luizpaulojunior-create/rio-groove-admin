@@ -234,7 +234,7 @@ export default function StorefrontLandingPages() {
                     {page.type}
                   </span>
                 </td>
-                <td className="p-4 text-sm text-white/70">/{page.slug}</td>
+                <td className="p-4 text-sm text-white/70">/editorial/{page.slug}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded text-xs font-medium border ${page.active ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
                     {page.active ? 'Ativa' : 'Inativa'}

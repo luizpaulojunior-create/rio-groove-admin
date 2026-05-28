@@ -5,25 +5,25 @@
 | Campo | Valor |
 |-------|-------|
 | **Tag** | `baseline-fase3-estavel` |
-| **SHA** | `4c32667` |
-| **Deploy** | Cloudflare Pages — `https://rio-groove-store-v2.pages.dev` |
+| **SHA** | `34a5e73` |
+| **Deploy** | Cloudflare Pages — `https://rio-groove-admin-painel.pages.dev` |
+| **Domínio** | `https://admin.riogroovemovimentos.com.br` |
 | **Data** | maio/2026 |
 
 ## Escopo congelado
 
-- Storefront v2 intacta (Supabase + checkout backend)
-- Legado Fase 3 removido (scripts debug, Success.tsx, orders.ts morto)
-- Docs ARCHITECTURE / API_CONTRACTS / ENVIRONMENT
+- Contratos shipping/analytics alinhados (Fase 2)
+- Legado Fase 3 removido (scripts, vite configs duplicados, netlify.toml)
+- `.env.example` + docs ENVIRONMENT
 
-## Ambiente legado (intencional, fora desta baseline v2)
+## Fora desta baseline
 
-- `https://proud-breeze-a824.luizpaulojunior.workers.dev`
-- `https://store.riogroovemovimentos.com.br` → Worker (não migrar ainda)
+Alterações CMS Storefront, ProductForm, inventory e segurança — **não incluídas** nesta tag.
 
 ## Rollback / redeploy
 
 ```powershell
 git checkout baseline-fase3-estavel
 npm run build
-npx wrangler pages deploy dist --project-name=rio-groove-store-v2 --commit-dirty=true
+npx wrangler pages deploy dist --project-name=rio-groove-admin-painel --commit-dirty=true
 ```
