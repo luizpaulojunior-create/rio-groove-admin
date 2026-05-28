@@ -11,8 +11,18 @@ function triggerBlobDownload(blob, filename) {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
+  anchor.rel = 'noopener';
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(anchor);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function blobLooksLikePdf(blob) {
+  if (!(blob instanceof Blob)) return false;
+  const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  return header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46;
 }
 
 /**
@@ -40,33 +50,37 @@ export const shippingService = {
     return data;
   },
 
-  /** Baixa PDF da etiqueta. Retorna true se download iniciou, false se veio link JSON */
+  /** Baixa PDF da etiqueta. Retorna true se download iniciou. */
   async downloadLabelPdf(orderReference, filename) {
     try {
       const response = await api.get(`/shipping/label/${encodeURIComponent(orderReference)}/pdf`, {
         responseType: 'blob',
       });
 
+      const blob = response.data;
       const contentType = String(response.headers['content-type'] || '');
 
-      if (contentType.includes('application/pdf')) {
-        triggerBlobDownload(response.data, filename || `etiqueta-${orderReference}.pdf`);
+      if (contentType.includes('application/pdf') || await blobLooksLikePdf(blob)) {
+        triggerBlobDownload(blob, filename || `etiqueta-${orderReference}.pdf`);
         return { downloaded: true };
       }
 
-      const text = await response.data.text();
-      const json = JSON.parse(text);
-      if (json.labelUrl) {
-        const popup = window.open(json.labelUrl, '_blank', 'noopener,noreferrer');
-        if (!popup) {
-          throw new Error('Pop-up bloqueado. Permita pop-ups ou copie o link: ' + json.labelUrl);
-        }
-        return { downloaded: false, labelUrl: json.labelUrl };
+      const text = await blob.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error('Resposta inválida ao baixar PDF da etiqueta.');
       }
+
       throw new Error(json.message || 'PDF da etiqueta indisponível.');
     } catch (error) {
       const blob = error?.response?.data;
       if (blob instanceof Blob) {
+        if (await blobLooksLikePdf(blob)) {
+          triggerBlobDownload(blob, filename || `etiqueta-${orderReference}.pdf`);
+          return { downloaded: true };
+        }
         const text = await blob.text();
         try {
           const json = JSON.parse(text);
