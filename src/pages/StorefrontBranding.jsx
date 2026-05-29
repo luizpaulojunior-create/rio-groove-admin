@@ -38,6 +38,8 @@ export default function StorefrontBranding() {
 
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [faviconFile, setFaviconFile] = useState(null);
+  const [faviconPreview, setFaviconPreview] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -99,14 +101,27 @@ export default function StorefrontBranding() {
     setLogoPreview(previewUrl);
   };
 
+  const handleFaviconUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFaviconFile(file);
+    setFaviconPreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       
       let finalLogoUrl = brandingData.assets.logo_url;
+      let finalFaviconUrl = brandingData.assets.favicon_url;
 
       if (logoFile) {
         finalLogoUrl = await storageService.uploadFile(logoFile, STORAGE_PATHS.BRANDING);
+      }
+
+      if (faviconFile) {
+        finalFaviconUrl = await storageService.uploadFile(faviconFile, STORAGE_PATHS.BRANDING);
       }
 
       const contentToSave = {
@@ -115,6 +130,7 @@ export default function StorefrontBranding() {
         assets: {
           ...brandingData.assets,
           logo_url: finalLogoUrl,
+          favicon_url: finalFaviconUrl,
         },
         editorial: brandingData.editorial,
         store_name: brandingData.store_name,
@@ -150,11 +166,14 @@ export default function StorefrontBranding() {
         assets: {
           ...prev.assets,
           logo_url: finalLogoUrl,
+          favicon_url: finalFaviconUrl,
         },
       }));
 
       setLogoPreview(null);
       setLogoFile(null);
+      setFaviconPreview(null);
+      setFaviconFile(null);
       toast.success('Branding salvo com sucesso');
     } catch (err) {
       console.error(err);
@@ -301,6 +320,24 @@ export default function StorefrontBranding() {
                   <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
                     <Upload size={16} /> Trocar Logo
                     <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={saving} />
+                  </label>
+                </div>
+              </div>
+
+              <label className="block text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-2">Favicon (ícone da aba do navegador)</label>
+              <div className="flex items-center gap-6 bg-[#050505] border border-white/10 rounded-xl p-4">
+                <div className="w-16 h-16 bg-[#1A1A1A] rounded-lg flex items-center justify-center border border-white/5 overflow-hidden">
+                  {(faviconPreview || brandingData.assets.favicon_url) ? (
+                    <img src={faviconPreview || brandingData.assets.favicon_url} alt="Favicon" className="max-w-full max-h-full object-contain" />
+                  ) : (
+                    <span className="text-[var(--color-text-muted)] text-[10px] text-center px-1">32×32</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-white/70 mb-3">PNG ou SVG quadrado, ideal 32×32 ou 64×64 px. Aparece na aba do Chrome/Safari.</p>
+                  <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                    <Upload size={16} /> Trocar Favicon
+                    <input type="file" accept="image/png,image/svg+xml,image/x-icon,image/webp" className="hidden" onChange={handleFaviconUpload} disabled={saving} />
                   </label>
                 </div>
               </div>
