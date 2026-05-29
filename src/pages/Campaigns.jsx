@@ -7,6 +7,10 @@ import { storageService } from '../services/storage';
 import { STORAGE_PATHS } from '../config/storage';
 import Modal from '../components/Modal';
 
+function getCampaignBanner(campaign) {
+  return campaign?.banner_url || campaign?.banner || campaign?.image_url || null;
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,12 +70,8 @@ export default function Campaigns() {
       const loadingToast = toast.loading('Salvando campanha...');
 
       if (bannerFile) {
-        console.log('UPLOADING CAMPAIGN BANNER', bannerFile);
-        data.banner = await storageService.uploadFile(bannerFile, STORAGE_PATHS.CAMPAIGNS);
-        console.log('BANNER UPLOAD RESULT:', data.banner);
+        data.banner_url = await storageService.uploadFile(bannerFile, STORAGE_PATHS.CAMPAIGNS);
       }
-      
-      console.log('SAVE PAYLOAD:', data);
 
       if (editingCampaign) {
         const response = await supabase
@@ -96,7 +96,7 @@ export default function Campaigns() {
     } catch (error) {
       console.error('Erro ao salvar campanha:', error);
       toast.dismiss();
-      toast.error('Erro ao salvar campanha.');
+      toast.error(error?.message || 'Erro ao salvar campanha.');
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +105,7 @@ export default function Campaigns() {
   const handleEdit = (campaign) => {
     setEditingCampaign(campaign);
     setBannerFile(null);
-    setBannerPreview(campaign.banner || null);
+    setBannerPreview(getCampaignBanner(campaign));
     setIsModalOpen(true);
   };
 
@@ -174,8 +174,8 @@ export default function Campaigns() {
         {campaigns.map((campaign) => (
           <div key={campaign.id} className="bg-[#0D0D0D] border border-white/5 rounded-3xl overflow-hidden group hover:border-[#FF4D00]/30 transition-all flex flex-col">
             <div className="h-32 bg-white/5 relative flex items-center justify-center overflow-hidden">
-              {campaign.banner ? (
-                <img src={campaign.banner} alt={campaign.title} className="w-full h-full object-cover" />
+              {getCampaignBanner(campaign) ? (
+                <img src={getCampaignBanner(campaign)} alt={campaign.title} className="w-full h-full object-cover" />
               ) : (
                 <Play className="text-white/20 w-12 h-12" />
               )}
