@@ -11,6 +11,18 @@ function getCampaignBanner(campaign) {
   return campaign?.banner_url || campaign?.banner || campaign?.image_url || null;
 }
 
+function isHttpUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value);
+}
+
+function formatCampaignSaveError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  if (message.includes('failed to fetch') || message.includes('network') || error?.name === 'StorageUnknownError') {
+    return 'Falha de conexão ao enviar o banner. Verifique sua internet, desative VPN/adblock e tente de novo.';
+  }
+  return error?.message || 'Erro ao salvar campanha.';
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +31,7 @@ export default function Campaigns() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
+  const [pendingBannerUrl, setPendingBannerUrl] = useState(null);
 
   const fetchCampaigns = async (showLoading = true) => {
     try {
@@ -70,7 +83,18 @@ export default function Campaigns() {
       const loadingToast = toast.loading('Salvando campanha...');
 
       if (bannerFile) {
-        data.banner_url = await storageService.uploadFile(bannerFile, STORAGE_PATHS.CAMPAIGNS);
+        const uploadedUrl = await storageService.uploadFile(bannerFile, STORAGE_PATHS.CAMPAIGNS);
+        data.banner_url = uploadedUrl;
+        setPendingBannerUrl(uploadedUrl);
+        setBannerFile(null);
+        setBannerPreview(uploadedUrl);
+      } else if (pendingBannerUrl) {
+        data.banner_url = pendingBannerUrl;
+      } else if (isHttpUrl(bannerPreview)) {
+        data.banner_url = bannerPreview;
+      } else if (editingCampaign) {
+        const existingBanner = getCampaignBanner(editingCampaign);
+        if (existingBanner) data.banner_url = existingBanner;
       }
 
       if (editingCampaign) {
@@ -91,12 +115,13 @@ export default function Campaigns() {
       }
 
       toast.update(loadingToast, { render: 'Campanha salva com sucesso!', type: 'success', isLoading: false, autoClose: 3000 });
+      setPendingBannerUrl(null);
       setIsModalOpen(false);
       fetchCampaigns(false);
     } catch (error) {
       console.error('Erro ao salvar campanha:', error);
       toast.dismiss();
-      toast.error(error?.message || 'Erro ao salvar campanha.');
+      toast.error(formatCampaignSaveError(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -105,6 +130,7 @@ export default function Campaigns() {
   const handleEdit = (campaign) => {
     setEditingCampaign(campaign);
     setBannerFile(null);
+    setPendingBannerUrl(getCampaignBanner(campaign));
     setBannerPreview(getCampaignBanner(campaign));
     setIsModalOpen(true);
   };
@@ -112,6 +138,7 @@ export default function Campaigns() {
   const handleAdd = () => {
     setEditingCampaign(null);
     setBannerFile(null);
+    setPendingBannerUrl(null);
     setBannerPreview(null);
     setIsModalOpen(true);
   };
