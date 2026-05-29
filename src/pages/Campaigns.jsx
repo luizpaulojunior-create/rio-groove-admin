@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 
 import { storageService } from '../services/storage';
 import { STORAGE_PATHS } from '../config/storage';
+import { collectionsService } from '../services/collections';
 import Modal from '../components/Modal';
 
 function getCampaignBanner(campaign) {
@@ -23,6 +24,16 @@ function formatCampaignSaveError(error) {
   return error?.message || 'Erro ao salvar campanha.';
 }
 
+function getCampaignScheduleLabel(campaign) {
+  const now = new Date();
+  if (!campaign.active) return 'Inativa';
+  if (campaign.start_date && new Date(campaign.start_date) > now) {
+    return `Agendada (${new Date(campaign.start_date).toLocaleDateString('pt-BR')})`;
+  }
+  if (campaign.end_date && new Date(campaign.end_date) < now) return 'Encerrada';
+  return 'Ativa';
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +43,7 @@ export default function Campaigns() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
   const [pendingBannerUrl, setPendingBannerUrl] = useState(null);
+  const [collections, setCollections] = useState([]);
 
   const fetchCampaigns = async (showLoading = true) => {
     try {
@@ -61,6 +73,9 @@ export default function Campaigns() {
 
   useEffect(() => {
     fetchCampaigns(false);
+    collectionsService.getCollections()
+      .then((data) => setCollections(Array.isArray(data) ? data : []))
+      .catch(() => setCollections([]));
   }, []);
 
   const handleSave = async (e) => {
@@ -68,10 +83,14 @@ export default function Campaigns() {
     if (isSubmitting) return;
 
     const formData = new FormData(e.target);
+    const collectionId = formData.get('collection_id');
     const data = {
       title: formData.get('title'),
       slug: formData.get('slug'),
-      coupon_code: formData.get('coupon_code'),
+      description: formData.get('description') || null,
+      type: formData.get('type') || 'seasonal',
+      collection_id: collectionId || null,
+      coupon_code: formData.get('coupon_code') || null,
       start_date: formData.get('start_date') || null,
       end_date: formData.get('end_date') || null,
       active: formData.get('active') === 'on'
@@ -79,7 +98,6 @@ export default function Campaigns() {
 
     try {
       setIsSubmitting(true);
-      console.log('SAVE CAMPAIGN INITIATED', data);
       const loadingToast = toast.loading('Salvando campanha...');
 
       if (bannerFile) {
@@ -103,14 +121,12 @@ export default function Campaigns() {
           .update(data)
           .eq('id', editingCampaign.id)
           .select();
-        console.log('SAVE RESPONSE (UPDATE):', response);
         if (response.error) throw response.error;
       } else {
         const response = await supabase
           .from('campaigns')
           .insert([data])
           .select();
-        console.log('SAVE RESPONSE (INSERT):', response);
         if (response.error) throw response.error;
       }
 
@@ -206,8 +222,14 @@ export default function Campaigns() {
               ) : (
                 <Play className="text-white/20 w-12 h-12" />
               )}
-              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${campaign.active ? 'bg-green-500/20 text-green-500' : 'bg-white/10 text-white/50'}`}>
-                {campaign.active ? 'Ativa' : 'Inativa'}
+              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                getCampaignScheduleLabel(campaign) === 'Ativa'
+                  ? 'bg-green-500/20 text-green-500'
+                  : getCampaignScheduleLabel(campaign).startsWith('Agendada')
+                    ? 'bg-purple-500/20 text-purple-400'
+                    : 'bg-white/10 text-white/50'
+              }`}>
+                {getCampaignScheduleLabel(campaign)}
               </div>
             </div>
             
@@ -225,6 +247,11 @@ export default function Campaigns() {
                   <div className="flex items-center gap-3 text-[var(--color-text-muted)]">
                     <Tag size={16} className="text-[#FF4D00]" />
                     <span className="uppercase font-bold text-white/80">{campaign.coupon_code}</span>
+                  </div>
+                )}
+                {campaign.collection_id && (
+                  <div className="text-[var(--color-text-muted)]">
+                    Coleção: {collections.find((c) => c.id === campaign.collection_id)?.name || 'Vinculada'}
                   </div>
                 )}
               </div>
@@ -274,6 +301,46 @@ export default function Campaigns() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Tipo</label>
+              <select
+                name="type"
+                defaultValue={editingCampaign?.type || 'seasonal'}
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
+              >
+                <option value="seasonal">Coleção Sazonal</option>
+                <option value="drop">Novo Drop</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção vinculada</label>
+              <select
+                name="collection_id"
+                defaultValue={editingCampaign?.collection_id || ''}
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
+              >
+                <option value="">— Nenhuma (produtos por tag) —</option>
+                {collections.map((collection) => (
+                  <option key={collection.id} value={collection.id}>
+                    {collection.name} ({collection.slug})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Descrição (subtítulo do card)</label>
+            <textarea
+              name="description"
+              rows={2}
+              defaultValue={editingCampaign?.description || editingCampaign?.subtitle || ''}
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 py-3 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 resize-none"
+              placeholder="Texto curto exibido no card da home"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Data de Início</label>
               <input type="datetime-local" name="start_date" defaultValue={editingCampaign?.start_date ? new Date(editingCampaign.start_date).toISOString().slice(0, 16) : ''} className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300" />
             </div>
@@ -307,6 +374,11 @@ export default function Campaigns() {
             </div>
           </div>
           
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm text-[var(--color-text-muted)]">
+            <p className="text-white/80 mb-1">Lançamento programado</p>
+            <p>Use <strong className="text-white/90">Data de Início</strong> para o card aparecer automaticamente na home. Mantenha a coleção vinculada com status <strong className="text-white/90">Ativa</strong> no dia do lançamento. Campanhas inativas, sem banner ou com coleção inexistente ficam ocultas na loja.</p>
+          </div>
+
           <div className="flex items-center gap-3">
             <input type="checkbox" name="active" id="active" defaultChecked={editingCampaign ? editingCampaign.active : true} className="w-5 h-5 rounded border-white/10 bg-transparent text-[#FF4D00] focus:ring-0 focus:ring-offset-0" />
             <label htmlFor="active" className="text-white">Campanha Ativa</label>
