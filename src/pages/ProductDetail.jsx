@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { normalizeImageUrl } from '../utils/imageUtils';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
+import { buildDuplicateProductDraft } from '../utils/productDuplicate';
 
 function timeAgo(dateString) {
   if (!dateString) return '';
@@ -34,6 +35,8 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [duplicateDraft, setDuplicateDraft] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [selectedImage, setSelectedImage] = useState(null);
@@ -195,7 +198,40 @@ export default function ProductDetail() {
   };
 
   const handleDuplicate = () => {
-    toast.info('Funcionalidade de duplicação em desenvolvimento.');
+    setDuplicateDraft(buildDuplicateProductDraft(product));
+    setIsDuplicateModalOpen(true);
+  };
+
+  const handleDuplicateSubmit = async (formData) => {
+    if (isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      const loadingToast = toast.loading('Criando cópia da estampa...');
+      const created = await productsService.createProduct({
+        ...formData,
+        active: 'false',
+        variants: JSON.stringify([]),
+      });
+      toast.update(loadingToast, {
+        render: 'Cópia criada! Ajuste insumo/imagens e ative quando publicar.',
+        type: 'success',
+        isLoading: false,
+        autoClose: 4000,
+      });
+      setIsDuplicateModalOpen(false);
+      setDuplicateDraft(null);
+      if (created?.id) {
+        navigate(`/admin/products/${created.id}`);
+      } else {
+        navigate('/admin/products');
+      }
+    } catch (error) {
+      console.error('Erro ao duplicar produto:', error);
+      toast.dismiss();
+      toast.error(error.message || 'Erro ao duplicar produto.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -677,6 +713,23 @@ export default function ProductDetail() {
               </button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => !isSubmitting && setIsDuplicateModalOpen(false)}
+        title="Duplicar Estampa"
+        maxWidth="max-w-4xl"
+      >
+        {duplicateDraft && (
+          <ProductForm
+            initialData={duplicateDraft}
+            duplicateMode
+            onSubmit={handleDuplicateSubmit}
+            onCancel={() => setIsDuplicateModalOpen(false)}
+            isLoading={isSubmitting}
+          />
         )}
       </Modal>
 

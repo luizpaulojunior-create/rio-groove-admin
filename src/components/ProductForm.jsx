@@ -52,7 +52,7 @@ function imageHasColor(img) {
   return nameParts.some((part) => FILENAME_COLOR_CODES.includes(part.split('.')[0].toLowerCase()));
 }
 
-export default function ProductForm({ initialData, onSubmit, onCancel, isLoading }) {
+export default function ProductForm({ initialData, onSubmit, onCancel, isLoading, duplicateMode = false }) {
   const { register, handleSubmit, formState: { errors }, control, setValue, reset } = useForm({
         defaultValues: initialData || {
       name: '',
@@ -163,7 +163,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     return fabrics.filter(f => f !== 'offWhite' && f !== 'Off White');
   };
 
-  const [images, setImages] = useState(() => parseImages(initialData));
+  const [images, setImages] = useState(() => (duplicateMode ? [] : parseImages(initialData)));
   const [imagesChanged, setImagesChanged] = useState(false);
   const [collections, setCollections] = useState([]);
   
@@ -171,7 +171,9 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   
   const [selectedColors, setSelectedColors] = useState(() => parseColors(initialData));
   const [selectedFabricAppearances, setSelectedFabricAppearances] = useState(() => parseFabricAppearances(initialData));
-  const [variants, setVariants] = useState(() => initialData?.product_variants || initialData?.variants || []);
+  const [variants, setVariants] = useState(() => (
+    duplicateMode ? [] : (initialData?.product_variants || initialData?.variants || [])
+  ));
   const [insumoCategory, setInsumoCategory] = useState(() => parseTags(initialData).insumo);
   const [insumoGender, setInsumoGender] = useState(() => parseTags(initialData).genero || DEFAULT_GENDER);
   const [insumoModel, setInsumoModel] = useState(() => parseTags(initialData).model);
@@ -209,10 +211,10 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         seo_keywords: initialData.seo_keywords || '',
         og_image: initialData.og_image || ''
       });
-      setImages(parseImages(initialData));
+      setImages(duplicateMode ? [] : parseImages(initialData));
       setSelectedColors(parseColors(initialData));
       setSelectedFabricAppearances(parseFabricAppearances(initialData));
-      setVariants(initialData.product_variants || initialData.variants || []);
+      setVariants(duplicateMode ? [] : (initialData.product_variants || initialData.variants || []));
       const { insumo, model, genero } = parseTags(initialData);
       setInsumoCategory(insumo);
       setInsumoModel(model);
@@ -241,13 +243,14 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       setInsumoModel(DEFAULT_MODEL);
       setImagesChanged(false);
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, duplicateMode]);
 
   const nameValue = useWatch({ control, name: 'name' });
+  const isCreateFlow = duplicateMode || !initialData?.id;
 
-  // Auto-generate slug from name if creating
+  // Auto-generate slug from name when criando ou duplicando
   useEffect(() => {
-    if (!initialData && nameValue) {
+    if (isCreateFlow && nameValue) {
       const generatedSlug = nameValue
         .toLowerCase()
         .normalize('NFD')
@@ -256,9 +259,14 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         .replace(/(^-|-$)+/g, '');
       setValue('slug', generatedSlug);
     }
-  }, [nameValue, initialData, setValue]);
+  }, [nameValue, isCreateFlow, setValue]);
 
   const handleFormSubmit = (data) => {
+    if (isCreateFlow && images.length === 0) {
+      toast.error('Adicione as imagens deste insumo/gênero antes de salvar a cópia.');
+      return;
+    }
+
     if (images.length > 0 && images.some((img) => !imageHasColor(img))) {
       toast.error('Defina a cor de cada imagem na galeria antes de salvar.');
       return;
@@ -300,6 +308,15 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
 
   return (
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-10">
+      {duplicateMode && (
+        <div className="rounded-2xl border border-[#FF4D00]/30 bg-[#FF4D00]/10 px-5 py-4 text-sm text-white/90">
+          <p className="font-medium text-white mb-1">Duplicando estampa</p>
+          <p className="text-white/75">
+            Textos, preço e categoria foram copiados. Ajuste <strong>insumo (blank)</strong>, gênero/modelo se precisar,
+            envie as <strong>novas imagens</strong> e confira o slug antes de salvar. A cópia nasce <strong>oculta</strong> até você publicar.
+          </p>
+        </div>
+      )}
       {/* Imagens */}
       <div className="space-y-4">
         <h4 className="text-2xl font-heading tracking-wide text-white border-b border-[var(--color-border)] pb-3">
@@ -700,7 +717,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
           {isLoading && (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
           )}
-          {initialData ? 'Atualizar Produto' : 'Cadastrar Produto'}
+          {duplicateMode ? 'Criar Cópia' : (initialData?.id ? 'Atualizar Produto' : 'Cadastrar Produto')}
         </button>
       </div>
     </form>

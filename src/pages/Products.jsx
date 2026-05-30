@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Copy } from 'lucide-react';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
 import { productsService } from '../services/products';
+import { buildDuplicateProductDraft } from '../utils/productDuplicate';
 import { toast } from 'react-toastify';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
@@ -12,6 +13,8 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [duplicateDraft, setDuplicateDraft] = useState(null);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pagination & Search
@@ -43,6 +46,45 @@ export default function Products() {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setIsModalOpen(true);
+  };
+
+  const handleDuplicate = async (product) => {
+    try {
+      const full = await productsService.getProduct(product.id);
+      setDuplicateDraft(buildDuplicateProductDraft(full));
+      setIsDuplicateModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao preparar duplicação:', error);
+      toast.error('Erro ao carregar produto para duplicar.');
+    }
+  };
+
+  const handleDuplicateSubmit = async (formData) => {
+    if (isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      const loadingToast = toast.loading('Criando cópia da estampa...');
+      await productsService.createProduct({
+        ...formData,
+        active: 'false',
+        variants: JSON.stringify([]),
+      });
+      toast.update(loadingToast, {
+        render: 'Cópia criada com sucesso!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+      setIsDuplicateModalOpen(false);
+      setDuplicateDraft(null);
+      fetchProducts(false);
+    } catch (error) {
+      console.error('Erro ao duplicar produto:', error);
+      toast.dismiss();
+      toast.error(error.message || 'Erro ao duplicar produto.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = async (product) => {
@@ -268,13 +310,23 @@ export default function Products() {
                         </div>
                       </td>
                       <td className="py-6 px-6 align-middle text-center">
-                        <button
-                          onClick={() => handleDelete(row)}
-                          className="w-[40px] h-[40px] rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,77,0,0.12)] text-[#FF4D4D] flex items-center justify-center transition-all mx-auto opacity-0 group-hover:opacity-100"
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center justify-center gap-2 mx-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(row)}
+                            className="w-[40px] h-[40px] rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,77,0,0.12)] text-zinc-300 hover:text-white flex items-center justify-center transition-all"
+                            title="Duplicar"
+                          >
+                            <Copy size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(row)}
+                            className="w-[40px] h-[40px] rounded-xl bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,77,0,0.12)] text-[#FF4D4D] flex items-center justify-center transition-all"
+                            title="Excluir"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -420,6 +472,23 @@ export default function Products() {
           )}
         </div>
       )}
+
+      <Modal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => !isSubmitting && setIsDuplicateModalOpen(false)}
+        title="Duplicar Estampa"
+        maxWidth="max-w-4xl"
+      >
+        {duplicateDraft && (
+          <ProductForm
+            initialData={duplicateDraft}
+            duplicateMode
+            onSubmit={handleDuplicateSubmit}
+            onCancel={() => setIsDuplicateModalOpen(false)}
+            isLoading={isSubmitting}
+          />
+        )}
+      </Modal>
 
       <Modal
         isOpen={isModalOpen}
