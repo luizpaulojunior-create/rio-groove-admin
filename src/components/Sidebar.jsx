@@ -18,12 +18,14 @@ import {
   Layout,
   Type,
   Mic2,
+  Palette,
   UserPlus
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/orders', name: 'Pedidos', icon: ShoppingBag },
+  { path: '/admin/custom-orders', name: 'Personalizados', icon: Palette },
   { path: '/admin/products', name: 'Produtos', icon: Package },
   { path: '/admin/stock', name: 'Estoque', icon: Boxes },
   { path: '/admin/collections', name: 'Coleções', icon: Layers },

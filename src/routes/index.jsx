@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Orders from '../pages/Orders';
+import CustomOrders from '../pages/CustomOrders';
 
 const Login = lazy(() => import('../pages/Login'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
@@ -43,6 +44,7 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
         <Route path="orders" element={<Orders />} />
+        <Route path="custom-orders" element={<CustomOrders />} />
         <Route path="products" element={<Products />} />
         <Route path="products/:id" element={<ProductDetail />} />
         <Route path="stock" element={<Stock />} />

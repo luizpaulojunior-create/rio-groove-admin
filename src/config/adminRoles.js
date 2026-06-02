@@ -23,6 +23,7 @@ export const ROUTE_MIN_ROLES = {
   '/admin/stock': ADMIN_ROLES.EDITOR,
   '/admin/products': ADMIN_ROLES.EDITOR,
   '/admin/orders': ADMIN_ROLES.EDITOR,
+  '/admin/custom-orders': ADMIN_ROLES.EDITOR,
   '/admin/campaigns': ADMIN_ROLES.EDITOR,
   '/admin/coupons': ADMIN_ROLES.EDITOR,
   '/admin/storefront': ADMIN_ROLES.EDITOR,
