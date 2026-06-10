@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { hasMinRole, getMinRoleForPath } from '../config/adminRoles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -47,6 +49,14 @@ const growthItems = [
 const settingsItem = { path: '/admin/settings', name: 'Configurações', icon: Settings };
 
 export default function Sidebar({ isOpen, setIsOpen }) {
+  const { adminRole } = useAuth();
+
+  const canAccess = (path) => hasMinRole(adminRole, getMinRoleForPath(path));
+
+  const visibleMenuItems = menuItems.filter((item) => canAccess(item.path));
+  const visibleGrowthItems = growthItems.filter((item) => canAccess(item.path));
+  const showSettings = canAccess(settingsItem.path);
+
   const SidebarContent = (
     <div className="flex flex-col h-full bg-[var(--color-background)] border-r border-[var(--color-border)] w-[320px]">
       {/* Logo Area */}
@@ -70,7 +80,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* Core Operational */}
         <div className="space-y-2">
           <p className="px-4 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Operacional</p>
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -92,7 +102,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* Growth & Branding */}
         <div className="space-y-2">
           <p className="px-4 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Marketing & Growth</p>
-          {growthItems.map((item) => (
+          {visibleGrowthItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -112,6 +122,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
 
         {/* Settings */}
+        {showSettings && (
         <div className="space-y-2 pt-4 border-t border-[var(--color-border)]">
           <NavLink
             to={settingsItem.path}
@@ -128,6 +139,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <span className="font-medium text-lg">{settingsItem.name}</span>
           </NavLink>
         </div>
+        )}
       </nav>
     </div>
   );

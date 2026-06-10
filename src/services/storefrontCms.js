@@ -3,6 +3,7 @@
  * Storefront v2 consome as mesmas tabelas via useStorefront (sem backend REST).
  */
 import { supabase } from '../lib/supabase';
+import { sanitizeCmsContent, sanitizeNavigationItems } from '../utils/cmsUrlValidation';
 
 export const STOREFRONT_SECTION_KEYS = {
   HERO: 'hero',
@@ -51,10 +52,15 @@ export async function saveStorefrontSection({
   orderIndex = 0,
   active = true,
 }) {
+  let safeContent = sanitizeCmsContent(content);
+  if (sectionKey === STOREFRONT_SECTION_KEYS.NAVIGATION && safeContent?.items) {
+    safeContent = { ...safeContent, items: sanitizeNavigationItems(safeContent.items) };
+  }
+
   const payload = {
     section_key: sectionKey,
     type,
-    content,
+    content: safeContent,
     active,
     order_index: orderIndex,
     updated_at: new Date().toISOString(),

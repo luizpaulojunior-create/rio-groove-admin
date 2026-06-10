@@ -9,6 +9,6 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    sourcemap: true,
-  }
+    sourcemap: process.env.NODE_ENV !== 'production',
+  },
 })

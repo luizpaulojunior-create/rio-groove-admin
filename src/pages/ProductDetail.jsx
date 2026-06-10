@@ -103,69 +103,10 @@ export default function ProductDetail() {
     fetchProduct(false);
   }, [fetchProduct]);
 
-  const handleAdjustSubmit = async (e) => {
+  const handleAdjustSubmit = (e) => {
     e.preventDefault();
-    if (isAdjusting) return;
-    
-    try {
-      setIsAdjusting(true);
-      const quantity = parseInt(adjustForm.quantity);
-      if (isNaN(quantity) || quantity <= 0) {
-        toast.error('Quantidade inválida');
-        return;
-      }
-
-      const currentAvailable = selectedVariant.available_stock !== undefined && selectedVariant.available_stock !== null 
-        ? selectedVariant.available_stock 
-        : (selectedVariant.stock || 0);
-        
-      const currentReserved = selectedVariant.reserved_stock || 0;
-
-      let newAvailable = currentAvailable;
-      if (adjustForm.type === 'add') {
-        newAvailable += quantity;
-      } else {
-        newAvailable -= quantity;
-        if (newAvailable < 0) newAvailable = 0;
-      }
-      
-      const newTotal = newAvailable + currentReserved;
-
-      // Atualiza o estoque da variante
-      const { error: updateError } = await supabase
-        .from('product_variants')
-        .update({ 
-          available_stock: newAvailable,
-          stock: newTotal
-        })
-        .eq('id', selectedVariant.id);
-
-      if (updateError) throw updateError;
-
-      // Registra o movimento
-      const { error: moveError } = await supabase
-        .from('inventory_movements')
-        .insert([{
-          variant_id: selectedVariant.id,
-          type: adjustForm.type === 'add' ? 'in' : 'out',
-          quantity: quantity,
-          reason: adjustForm.reason,
-          notes: adjustForm.notes
-        }]);
-        
-      if (moveError) {
-        console.warn('Aviso: Movimento não registrado em inventory_movements', moveError);
-      }
-
-      toast.success('Estoque atualizado com sucesso!');
-      setAdjustModalOpen(false);
-      fetchProduct(false);
-    } catch (error) {
-      console.error('Erro ao ajustar estoque:', error);
-      toast.error('Erro ao atualizar estoque');
-    } finally {
-      setIsAdjusting(false);
-    }
+    toast.info('Ajuste de estoque legado desativado. Use Estoque → Blanks no menu.');
+    setAdjustModalOpen(false);
   };
 
   const handleEditSubmit = async (formData) => {

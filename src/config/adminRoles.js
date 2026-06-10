@@ -12,7 +12,7 @@ const ROLE_RANK = {
 
 /** @param {string | null | undefined} userRole */
 export function hasMinRole(userRole, minRole) {
-  const current = ROLE_RANK[userRole] || ROLE_RANK.editor;
+  const current = ROLE_RANK[userRole] || ROLE_RANK.viewer;
   const required = ROLE_RANK[minRole] || ROLE_RANK.superadmin;
   return current >= required;
 }

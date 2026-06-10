@@ -1,10 +1,6 @@
-import api from '../lib/api';
+import api, { getBackendRootUrl } from '../lib/api';
 
-/** Base da API sem sufixo /api — usado para OAuth Melhor Envio (redirect browser). */
-export function getBackendRootUrl() {
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api';
-  return apiUrl.replace(/\/api\/?$/, '');
-}
+export { getBackendRootUrl };
 
 function triggerBlobDownload(blob, filename) {
   const url = URL.createObjectURL(blob);

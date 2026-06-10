@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Palette, Search } from 'lucide-react';
+import { ChevronRight, Loader2, Palette, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import DataTable from '../components/DataTable';
@@ -11,6 +11,27 @@ import {
 
 function statusLabel(id) {
   return CUSTOM_ORDER_STATUSES.find((s) => s.id === id)?.label || id;
+}
+
+const FILTER_OPTIONS = [
+  { id: 'all', label: 'Todos os pedidos' },
+  ...CUSTOM_ORDER_STATUSES.map((s) => ({ id: s.id, label: s.label })),
+];
+
+function nextStatusId(currentId) {
+  const idx = CUSTOM_ORDER_STATUSES.findIndex((s) => s.id === currentId);
+  const nextIdx = idx < 0 ? 0 : (idx + 1) % CUSTOM_ORDER_STATUSES.length;
+  return CUSTOM_ORDER_STATUSES[nextIdx].id;
+}
+
+function nextFilterId(currentId) {
+  const idx = FILTER_OPTIONS.findIndex((f) => f.id === currentId);
+  const nextIdx = idx < 0 ? 0 : (idx + 1) % FILTER_OPTIONS.length;
+  return FILTER_OPTIONS[nextIdx].id;
+}
+
+function filterLabel(id) {
+  return FILTER_OPTIONS.find((f) => f.id === id)?.label || 'Todos os pedidos';
 }
 
 export default function CustomOrders() {
@@ -52,11 +73,18 @@ export default function CustomOrders() {
     );
   });
 
-  function openDetail(order) {
-    setSelected(order);
-    setAdminNotes(order.admin_notes || '');
-    setQuoteAmount(order.quote_amount != null ? String(order.quote_amount) : '');
-    setStatus(order.status || 'received');
+  async function openDetail(order) {
+    let detail = order;
+    try {
+      detail = (await customOrdersService.getOrder(order.id)) || order;
+    } catch (err) {
+      console.error(err);
+      toast.error('Não foi possível carregar o detalhe completo.');
+    }
+    setSelected(detail);
+    setAdminNotes(detail.admin_notes || '');
+    setQuoteAmount(detail.quote_amount != null ? String(detail.quote_amount) : '');
+    setStatus(detail.status || 'received');
     setMockupFile(null);
   }
 
@@ -89,7 +117,17 @@ export default function CustomOrders() {
       header: 'Protocolo',
       accessor: 'protocol',
       render: (row) => (
-        <span className="font-mono text-sm">{row.protocol}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openDetail(row);
+          }}
+          className="font-mono text-sm text-primary hover:text-red-400 hover:underline transition-all text-left"
+          title={`Ver pedido ${row.protocol}`}
+        >
+          {row.protocol}
+        </button>
       ),
     },
     {
@@ -157,17 +195,25 @@ export default function CustomOrders() {
             className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-4 py-2"
-        >
-          <option value="all">Todos os status</option>
-          {CUSTOM_ORDER_STATUSES.map((s) => (
-            <option key={s.id} value={s.id}>{s.label}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="hidden sm:inline text-xs text-gray-500 uppercase tracking-wider">Filtrar</span>
+          <span className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-sm text-white min-w-[8.5rem] text-center">
+            {filterLabel(statusFilter)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setStatusFilter(nextFilterId(statusFilter))}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-sm text-gray-300 hover:border-primary/40 hover:text-white transition-colors whitespace-nowrap"
+            title="Passar para o próximo filtro de status"
+          >
+            Próximo
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
+      <p className="text-xs text-gray-500 -mt-2">
+        Use &quot;Próximo&quot; para alternar o filtro da lista (todos → recebido → em análise…). Dentro do pedido, o mesmo botão muda o status do cliente.
+      </p>
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -177,6 +223,7 @@ export default function CustomOrders() {
         <DataTable
           columns={columns}
           data={filtered}
+          hideToolbar
           onRowClick={openDetail}
         />
       )}
@@ -213,32 +260,73 @@ export default function CustomOrders() {
               </div>
             )}
 
+            {selected.print_placements?.length > 0 && (
+              <div>
+                <p className="text-gray-500 text-sm mb-1">Áreas de impressão</p>
+                <p className="text-sm">{Array.isArray(selected.print_placements) ? selected.print_placements.join(', ') : selected.print_placements}</p>
+              </div>
+            )}
+
+            {selected.size_breakdown && Object.keys(selected.size_breakdown).length > 0 && (
+              <div>
+                <p className="text-gray-500 text-sm mb-1">Grade de tamanhos</p>
+                <p className="text-sm font-mono">
+                  {Object.entries(selected.size_breakdown)
+                    .filter(([, q]) => Number(q) > 0)
+                    .map(([size, q]) => `${size}: ${q}`)
+                    .join(' · ')}
+                </p>
+              </div>
+            )}
+
             {selected.custom_order_files?.length > 0 && (
               <div>
-                <p className="text-gray-500 text-sm mb-2">Arquivos</p>
-                <ul className="space-y-1 text-sm">
-                  {selected.custom_order_files.map((f) => (
-                    <li key={f.id}>
-                      <a href={f.storage_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                        [{f.kind}] {f.file_name || 'arquivo'}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-gray-500 text-sm mb-2">Arquivos e estampas</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {selected.custom_order_files.map((f) => {
+                    const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(f.file_name || f.storage_url || '');
+                    return (
+                      <div key={f.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">
+                          {f.kind === 'customer_art' ? 'Arte do cliente' : f.kind === 'reference' ? 'Referência' : f.kind === 'mockup' ? 'Mockup' : f.kind}
+                        </p>
+                        {isImage && f.storage_url ? (
+                          <a href={f.storage_url} target="_blank" rel="noreferrer" className="block mb-2">
+                            <img
+                              src={f.storage_url}
+                              alt={f.file_name || 'Arte'}
+                              className="w-full max-h-40 object-contain rounded bg-black/40"
+                            />
+                          </a>
+                        ) : null}
+                        <a href={f.storage_url} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline break-all">
+                          {f.file_name || 'Abrir arquivo'}
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
             <div>
-              <label className="block text-sm text-gray-500 mb-1">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2"
-              >
-                {CUSTOM_ORDER_STATUSES.map((s) => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
-                ))}
-              </select>
+              <label className="block text-sm text-gray-500 mb-2">Status</label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <span className="inline-flex px-4 py-2.5 rounded-lg border border-primary/30 bg-primary/10 text-primary font-medium text-sm">
+                  {statusLabel(status)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStatus(nextStatusId(status))}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-white/15 bg-white/5 text-white text-sm hover:border-primary/40 hover:bg-primary/10 transition-colors"
+                >
+                  Próximo status
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Clique em &quot;Próximo status&quot; para avançar (recebido → em análise → orçamento…). Depois, Salvar.
+              </p>
             </div>
 
             <div>

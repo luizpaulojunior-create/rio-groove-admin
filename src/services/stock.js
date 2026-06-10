@@ -143,5 +143,9 @@ export const stockService = {
   async seedStockItems() {
     const { data } = await api.post('/stock/seed');
     return data;
+  },
+  async syncYellowStockItems(quantity = 10) {
+    const { data } = await api.post('/stock/sync-yellow', { quantity: Number(quantity) || 10 });
+    return data;
   }
 };

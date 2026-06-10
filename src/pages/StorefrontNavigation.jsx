@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Save, RefreshCw, Globe, Plus, Trash2, MoveUp, MoveDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, RefreshCw, Globe, Plus, Trash2, MoveUp, MoveDown, ChevronDown, ChevronUp, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { STORAGE_PATHS } from '../config/storage';
+import { storageService } from '../services/storage';
 import {
   STOREFRONT_SECTION_KEYS,
   fetchStorefrontSection,
@@ -15,6 +17,7 @@ export default function StorefrontNavigation() {
   const [menuItems, setMenuItems] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [uploadingEditorialId, setUploadingEditorialId] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -113,6 +116,29 @@ export default function StorefrontNavigation() {
     setMenuItems(menuItems.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
+  };
+
+  const handleEditorialImageUpload = async (itemId, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingEditorialId(itemId);
+      const publicUrl = await storageService.uploadFile(file, STORAGE_PATHS.NAVIGATION);
+      updateMenuItem(itemId, 'editorialImage', publicUrl);
+      toast.success('Imagem enviada para a biblioteca. Clique em Salvar para publicar.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao enviar imagem. Tente novamente.');
+    } finally {
+      setUploadingEditorialId(null);
+      event.target.value = '';
+    }
+  };
+
+  const removeEditorialImage = (itemId) => {
+    updateMenuItem(itemId, 'editorialImage', '');
+    toast.info('Imagem removida desta seção. Salve para publicar.');
   };
 
   const moveItem = (index, direction) => {
@@ -342,17 +368,59 @@ export default function StorefrontNavigation() {
                       <div className="bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-4">
                         <label className="block text-xs uppercase tracking-wider text-white border-b border-white/5 pb-2">Destaque Editorial (Opcional)</label>
                         <div>
-                          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Imagem Editorial (URL)</label>
-                          <input
-                            type="text"
-                            value={item.editorialImage || ''}
-                            onChange={(e) => updateMenuItem(item.id, 'editorialImage', e.target.value)}
-                            placeholder="https://..."
-                            className="w-full bg-[#0D0D0D] border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
-                          />
+                          <label className="block text-xs text-[var(--color-text-muted)] mb-2">Imagem editorial</label>
+                          <div className="relative group rounded-xl overflow-hidden border border-white/10 aspect-[4/5] bg-black/40 max-h-52">
+                            {item.editorialImage ? (
+                              <img
+                                src={item.editorialImage}
+                                alt={`Destaque ${item.label}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-full min-h-[10rem] text-white/25 gap-2">
+                                <ImageIcon size={28} />
+                                <span className="text-xs">Nenhuma imagem</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <label className={`cursor-pointer bg-[#FF4D00] text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-[#e64500] ${uploadingEditorialId === item.id ? 'opacity-60 pointer-events-none' : ''}`}>
+                                {uploadingEditorialId === item.id ? (
+                                  <RefreshCw size={14} className="animate-spin" />
+                                ) : (
+                                  <Upload size={14} />
+                                )}
+                                {uploadingEditorialId === item.id ? 'Enviando…' : 'Da biblioteca'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={uploadingEditorialId === item.id}
+                                  onChange={(e) => handleEditorialImageUpload(item.id, e)}
+                                />
+                              </label>
+                              {item.editorialImage && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeEditorialImage(item.id)}
+                                  className="p-2 rounded-lg bg-white/10 text-white hover:bg-red-500/80"
+                                  title="Remover imagem"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-[var(--color-text-muted)] mt-2">
+                            Envie PNG ou JPG — salva na biblioteca do site (não use link externo).
+                          </p>
                         </div>
                         <div>
-                          <label className="block text-xs text-[var(--color-text-muted)] mb-1">Frase Curta</label>
+                          <label className="block text-xs text-[var(--color-text-muted)] mb-1">
+                            Frase Curta
+                            <span className="block text-[10px] text-white/35 font-normal mt-0.5">
+                              Em branco = só a imagem, sem texto por cima.
+                            </span>
+                          </label>
                           <input 
                             type="text" 
                             value={item.editorialText || ''}

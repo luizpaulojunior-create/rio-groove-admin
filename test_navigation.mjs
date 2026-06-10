@@ -53,8 +53,15 @@ async function runTest() {
     // If it redirected to login, let's login
     if (page.url().includes('/login')) {
         console.log("Logging in...");
-        await page.type('input[type="email"]', 'admin@riogroove.com.br');
-        await page.type('input[type="password"]', 'riogroove2024'); // guessing password or I can just bypass auth
+        const testEmail = process.env.ADMIN_TEST_EMAIL || '';
+        const testPassword = process.env.ADMIN_TEST_PASSWORD || '';
+        if (!testEmail || !testPassword) {
+            console.error('Defina ADMIN_TEST_EMAIL e ADMIN_TEST_PASSWORD para login E2E.');
+            devServer.kill();
+            process.exit(1);
+        }
+        await page.type('input[type="email"]', testEmail);
+        await page.type('input[type="password"]', testPassword);
         await page.click('button[type="submit"]');
         await page.waitForNavigation({ waitUntil: 'networkidle0' });
         console.log(`URL after login: ${page.url()}`);

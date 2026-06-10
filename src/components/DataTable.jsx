@@ -8,6 +8,8 @@ export default function DataTable({
   onEdit,
   onDelete,
   onAdjust,
+  onRowClick,
+  hideToolbar = false,
   searchPlaceholder = 'Buscar...',
   onAdd,
   addButtonText = 'Adicionar',
@@ -31,6 +33,7 @@ export default function DataTable({
   return (
     <div className="space-y-6">
       {/* Toolbar */}
+      {!hideToolbar && (
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
         <div className="relative flex-1 w-full max-w-md">
           <Search
@@ -56,6 +59,7 @@ export default function DataTable({
           </button>
         )}
       </div>
+      )}
 
       {/* Table */}
       <div className="card-premium overflow-hidden !p-0">
@@ -83,7 +87,8 @@ export default function DataTable({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: rowIndex * 0.03 }}
                     key={row?.id || rowIndex}
-                    className="group"
+                    className={`group ${onRowClick ? 'cursor-pointer hover:bg-white/[0.03]' : ''}`}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
                   >
                     {(Array.isArray(columns) ? columns : []).map((col, colIndex) => (
                       <td key={colIndex}>

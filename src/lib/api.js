@@ -6,8 +6,20 @@
 import axios from 'axios';
 import { supabase } from './supabase';
 
+/** Garante sufixo /api mesmo se VITE_API_URL vier sem ele (ex.: Cloudflare env). */
+export function resolveApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api').trim();
+  const withoutTrailing = raw.replace(/\/+$/, '');
+  return withoutTrailing.endsWith('/api') ? withoutTrailing : `${withoutTrailing}/api`;
+}
+
+/** Raiz do backend sem /api — OAuth Melhor Envio, redirects. */
+export function getBackendRootUrl() {
+  return resolveApiBaseUrl().replace(/\/api$/, '');
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api',
+  baseURL: resolveApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

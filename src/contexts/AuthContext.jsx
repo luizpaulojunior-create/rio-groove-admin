@@ -19,7 +19,7 @@ export const AuthProvider = ({
     useState(false);
 
   const [adminRole, setAdminRole] =
-    useState('editor');
+    useState('viewer');
 
   const [loading, setLoading] =
     useState(true);
@@ -31,7 +31,7 @@ export const AuthProvider = ({
       if (!currentUser) {
         setUser(null);
         setIsAdmin(false);
-        setAdminRole('editor');
+        setAdminRole('viewer');
         return;
       }
 
@@ -76,7 +76,7 @@ export const AuthProvider = ({
       }
 
       setIsAdmin(!!adminData);
-      setAdminRole(adminData?.role || 'editor');
+      setAdminRole(adminData?.role || 'viewer');
     } catch (err) {
       console.error(
         'Erro checkAdmin:',
@@ -84,7 +84,7 @@ export const AuthProvider = ({
       );
 
       setIsAdmin(false);
-      setAdminRole('editor');
+      setAdminRole('viewer');
     } finally {
       setLoading(false);
     }
@@ -95,31 +95,27 @@ export const AuthProvider = ({
       try {
         setLoading(true);
 
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout sessão')), 8000)
+        );
+
         const {
           data: { session },
           error,
-        } =
-          await supabase.auth.getSession();
+        } = await Promise.race([sessionPromise, timeoutPromise]);
 
         if (error) {
-          console.error(
-            'Erro sessão:',
-            error
-          );
+          console.error('Erro sessão:', error);
         }
 
-        await checkAdmin(
-          session?.user || null
-        );
+        await checkAdmin(session?.user || null);
       } catch (err) {
-        console.error(
-          'Erro loadSession:',
-          err
-        );
-
+        console.error('Erro loadSession:', err);
         setUser(null);
         setIsAdmin(false);
-        setAdminRole('editor');
+        setAdminRole('viewer');
+      } finally {
         setLoading(false);
       }
     };
@@ -131,6 +127,7 @@ export const AuthProvider = ({
     } =
       supabase.auth.onAuthStateChange(
         (_event, session) => {
+          setLoading(true);
           checkAdmin(session?.user || null);
         }
       );
@@ -145,7 +142,7 @@ export const AuthProvider = ({
 
     setUser(null);
     setIsAdmin(false);
-    setAdminRole('editor');
+    setAdminRole('viewer');
   };
 
   return (

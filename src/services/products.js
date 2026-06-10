@@ -65,7 +65,7 @@ export const productsService = {
     const formData = new FormData();
 
     Object.keys(dataObj).forEach(key => {
-      if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances') {
+      if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances' && key !== 'tags') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
     });
@@ -107,7 +107,7 @@ export const productsService = {
     const formData = new FormData();
 
     Object.keys(dataObj).forEach(key => {
-      if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances') {
+      if (key !== 'images' && key !== 'collections' && key !== 'colors' && key !== 'fabricAppearances' && key !== 'tags') {
         formData.append(key, dataObj[key] === null ? '' : dataObj[key]);
       }
     });

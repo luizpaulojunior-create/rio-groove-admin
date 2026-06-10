@@ -8,16 +8,11 @@ export default function ProtectedRoute() {
     loading,
   } = useAuth();
 
-  console.log({
-    user,
-    isAdmin,
-    loading,
-  });
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        Loading auth...
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-white bg-[#050505]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#FF4D00] border-t-transparent" />
+        <p className="text-sm text-white/60">Carregando painel...</p>
       </div>
     );
   }

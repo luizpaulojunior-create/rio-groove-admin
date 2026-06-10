@@ -205,6 +205,26 @@ export default function Stock() {
     }
   };
 
+  const handleSyncYellow = async () => {
+    if (isProcessing) return;
+    if (!window.confirm('Criar/atualizar todos os SKUs amarelos (Camisa, Regata, Boné) com 10 unidades cada?')) {
+      return;
+    }
+    try {
+      setIsProcessing(true);
+      const loadingToast = toast.loading('Sincronizando estoque amarelo...');
+      const response = await stockService.syncYellowStockItems(10);
+      toast.update(loadingToast, { render: response.message, type: 'success', isLoading: false, autoClose: 6000 });
+      fetchStock(false);
+    } catch (error) {
+      console.error('Erro ao sincronizar amarelo:', error);
+      toast.dismiss();
+      toast.error(error?.response?.data?.error || error.message || 'Erro ao sincronizar estoque amarelo.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleAdd = () => {
     setEditingItem(null);
     applyCategoryDefaults(CATEGORIES[0]);
@@ -398,6 +418,14 @@ export default function Stock() {
             <p className="text-xs text-[var(--color-text-muted)] mt-1">Centro operacional de estoque e reposição em tempo real</p>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              onClick={handleSyncYellow}
+              disabled={isProcessing}
+              className="flex-1 md:flex-none px-3 h-8 bg-[#111] border border-yellow-500/30 rounded text-xs font-medium text-yellow-400 hover:text-yellow-300 hover:bg-[#1a1a1a] flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Package size={14} />
+              <span>Amarelo 10 un.</span>
+            </button>
             <button
               onClick={handleSeed}
               disabled={isProcessing}

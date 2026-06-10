@@ -2,9 +2,22 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import UploadArea from './UploadArea';
 import { collectionsService } from '../services/collections';
-import { CATEGORIES, SIZES, COLORS, GENDERS, getModelsForCategory } from '../config/inventory';
-import { PRODUCT_CATEGORIES } from '../config/productCategories';
+import { SIZES, COLORS, GENDERS, getModelsForCategory } from '../config/inventory';
+import { PRODUCT_CATEGORIES, PRODUCT_CATALOG_SLUGS } from '../config/productCategories';
+import {
+  parseSegmentFromTags,
+  resolveSegmentFromInsumo,
+  resolveThemeFromCollection,
+  findCollectionForTheme,
+  buildStorePreviewUrls,
+  PRODUCT_FORM_INSUMO_CATEGORIES,
+  CROPPED_MODELS,
+  isCroppedInsumoCategory,
+  resolveInsumoFormCategory,
+  resolveStockInsumo,
+} from '../config/productCatalog';
 import { toast } from 'react-toastify';
+import { normalizeProductTags } from '../utils/normalizeProductTags';
 
 import { useWatch } from 'react-hook-form';
 
@@ -12,7 +25,7 @@ const DEFAULT_INSUMO = 'Camisa';
 const DEFAULT_MODEL = 'Oversized Tradicional';
 const DEFAULT_GENDER = 'Masculino';
 
-const FILENAME_COLOR_CODES = ['red', 'blk', 'wht', 'gre', 'silv', 'off', 'blue', 'grn', 'brn', 'bge'];
+const FILENAME_COLOR_CODES = ['red', 'blk', 'wht', 'gre', 'silv', 'off', 'blue', 'grn', 'brn', 'bge', 'yel'];
 
 function variantLabelToKey(variant) {
   if (!variant) return '';
@@ -23,6 +36,7 @@ function variantLabelToKey(variant) {
     'off white': 'off', offwhite: 'off',
     vermelho: 'red', red: 'red',
     verde: 'grn', green: 'grn',
+    amarelo: 'yel', yellow: 'yel',
   };
   if (map[norm]) return map[norm];
   const byKey = COLORS.find((c) => c.key === norm);
@@ -32,7 +46,7 @@ function variantLabelToKey(variant) {
 }
 
 function parseTags(data) {
-  const tags = Array.isArray(data?.tags) ? data.tags : [];
+  const tags = normalizeProductTags(data?.tags);
   let insumo = DEFAULT_INSUMO;
   let model = DEFAULT_MODEL;
   let genero = null;
@@ -42,6 +56,18 @@ function parseTags(data) {
     if (typeof tag === 'string' && tag.startsWith('genero:')) genero = tag.slice(7);
   });
   return { insumo, model, genero };
+}
+
+function readInitialInsumoState(data) {
+  const { insumo, model, genero } = parseTags(data);
+  const formCategory = resolveInsumoFormCategory(data?.tags, insumo, model, genero);
+  const gender = isCroppedInsumoCategory(formCategory)
+    ? 'Feminino'
+    : (genero || DEFAULT_GENDER);
+  const defaultModel = isCroppedInsumoCategory(formCategory)
+    ? (CROPPED_MODELS.includes(model) ? model : CROPPED_MODELS[0])
+    : model;
+  return { formCategory, gender, model: defaultModel };
 }
 
 function imageHasColor(img) {
@@ -174,14 +200,44 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   const [variants, setVariants] = useState(() => (
     duplicateMode ? [] : (initialData?.product_variants || initialData?.variants || [])
   ));
-  const [insumoCategory, setInsumoCategory] = useState(() => parseTags(initialData).insumo);
-  const [insumoGender, setInsumoGender] = useState(() => parseTags(initialData).genero || DEFAULT_GENDER);
-  const [insumoModel, setInsumoModel] = useState(() => parseTags(initialData).model);
+  const initialInsumo = readInitialInsumoState(initialData);
+  const [insumoCategory, setInsumoCategory] = useState(() => initialInsumo.formCategory);
+  const [insumoGender, setInsumoGender] = useState(() => initialInsumo.gender);
+  const [insumoModel, setInsumoModel] = useState(() => initialInsumo.model);
+  const [catalogSlug, setCatalogSlug] = useState(() => {
+    const fromTags = parseSegmentFromTags(initialData?.tags);
+    if (fromTags) return fromTags;
+    const { insumo, model, genero } = parseTags(initialData);
+    return resolveSegmentFromInsumo(
+      resolveInsumoFormCategory(initialData?.tags, insumo, model, genero),
+      model,
+      genero || DEFAULT_GENDER
+    );
+  });
+  const [catalogSlugManual, setCatalogSlugManual] = useState(() => Boolean(parseSegmentFromTags(initialData?.tags)));
 
-  const insumoModels = useMemo(
-    () => getModelsForCategory(insumoCategory, insumoGender),
-    [insumoCategory, insumoGender]
-  );
+  const insumoModels = useMemo(() => {
+    if (isCroppedInsumoCategory(insumoCategory)) return CROPPED_MODELS;
+    return getModelsForCategory(insumoCategory, insumoGender);
+  }, [insumoCategory, insumoGender]);
+
+  const handleInsumoCategoryChange = (nextCategory) => {
+    setInsumoCategory(nextCategory);
+    if (isCroppedInsumoCategory(nextCategory)) {
+      setInsumoGender('Feminino');
+      setInsumoModel(CROPPED_MODELS[0]);
+      setCatalogSlug('cropped');
+      setCatalogSlugManual(true);
+      return;
+    }
+    if (nextCategory === 'Camisa') {
+      setInsumoGender((g) => g || DEFAULT_GENDER);
+    }
+    if (nextCategory === 'Regata') {
+      setInsumoGender('Masculino');
+    }
+    setCatalogSlugManual(false);
+  };
 
   useEffect(() => {
     if (insumoModels.length === 0) return;
@@ -216,9 +272,14 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       setSelectedFabricAppearances(parseFabricAppearances(initialData));
       setVariants(duplicateMode ? [] : (initialData.product_variants || initialData.variants || []));
       const { insumo, model, genero } = parseTags(initialData);
-      setInsumoCategory(insumo);
-      setInsumoModel(model);
-      if (genero) setInsumoGender(genero);
+      const nextInsumo = readInitialInsumoState(initialData);
+      setInsumoCategory(nextInsumo.formCategory);
+      setInsumoModel(nextInsumo.model);
+      setInsumoGender(nextInsumo.gender);
+      const segment = parseSegmentFromTags(initialData?.tags)
+        || resolveSegmentFromInsumo(nextInsumo.formCategory, nextInsumo.model, nextInsumo.gender);
+      setCatalogSlug(segment);
+      setCatalogSlugManual(Boolean(parseSegmentFromTags(initialData?.tags)));
       setImagesChanged(false);
     } else {
       reset({
@@ -241,12 +302,55 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       setInsumoCategory(DEFAULT_INSUMO);
       setInsumoGender(DEFAULT_GENDER);
       setInsumoModel(DEFAULT_MODEL);
+      setCatalogSlug('');
+      setCatalogSlugManual(false);
       setImagesChanged(false);
     }
   }, [initialData, reset, duplicateMode]);
 
   const nameValue = useWatch({ control, name: 'name' });
+  const collectionIdValue = useWatch({ control, name: 'collection_id' });
+  const categoryValue = useWatch({ control, name: 'category' });
   const isCreateFlow = duplicateMode || !initialData?.id;
+
+  const selectedCollection = useMemo(
+    () => collections.find((c) => String(c.id) === String(collectionIdValue || '')) || null,
+    [collections, collectionIdValue]
+  );
+
+  const storePreviewUrls = useMemo(
+    () => buildStorePreviewUrls({
+      collectionSlug: selectedCollection?.slug,
+      catalogSlug,
+      gender: insumoGender,
+    }),
+    [selectedCollection?.slug, catalogSlug, insumoGender]
+  );
+
+  // Coleção → categoria temática (ex.: Malandragem & Rua)
+  useEffect(() => {
+    if (!selectedCollection) return;
+    const theme = resolveThemeFromCollection(selectedCollection);
+    if (theme && theme !== categoryValue) {
+      setValue('category', theme);
+    }
+  }, [selectedCollection, setValue, categoryValue]);
+
+  // Categoria temática → coleção vinculada
+  useEffect(() => {
+    if (!categoryValue || collectionIdValue || !collections.length) return;
+    const match = findCollectionForTheme(collections, categoryValue);
+    if (match) {
+      setValue('collection_id', match.id);
+    }
+  }, [categoryValue, collectionIdValue, collections, setValue]);
+
+  // Modelo + gênero + insumo → slug catálogo (cropped, oversized…)
+  useEffect(() => {
+    if (catalogSlugManual || isCroppedInsumoCategory(insumoCategory)) return;
+    const resolved = resolveSegmentFromInsumo(insumoCategory, insumoModel, insumoGender);
+    setCatalogSlug(resolved);
+  }, [insumoCategory, insumoModel, insumoGender, catalogSlugManual]);
 
   // Auto-generate slug from name when criando ou duplicando
   useEffect(() => {
@@ -273,9 +377,14 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     }
 
     const adminColors = selectedColors.length > 0 ? selectedColors : [];
-    const catalogTags = [`insumo:${insumoCategory}`, `model:${insumoModel}`];
-    if (insumoCategory === 'Camisa' || insumoCategory === 'Regata') {
-      catalogTags.push(`genero:${insumoCategory === 'Regata' ? 'Masculino' : insumoGender}`);
+    const stockInsumo = resolveStockInsumo(insumoCategory);
+    const catalogTags = [`insumo:${stockInsumo}`, `model:${insumoModel}`];
+    if (stockInsumo === 'Camisa' || stockInsumo === 'Regata' || isCroppedInsumoCategory(insumoCategory)) {
+      catalogTags.push(`genero:${stockInsumo === 'Regata' ? 'Masculino' : insumoGender}`);
+    }
+    const segment = isCroppedInsumoCategory(insumoCategory) ? 'cropped' : catalogSlug;
+    if (segment) {
+      catalogTags.push(`segmento:${segment}`);
     }
 
     const payload = { 
@@ -390,21 +499,22 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
             <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria do insumo</label>
             <select
               value={insumoCategory}
-              onChange={(e) => setInsumoCategory(e.target.value)}
+              onChange={(e) => handleInsumoCategoryChange(e.target.value)}
               className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
             >
-              {CATEGORIES.filter((c) => c !== 'Acessório').map((c) => (
+              {PRODUCT_FORM_INSUMO_CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>
-          {insumoCategory === 'Camisa' && (
+          {(insumoCategory === 'Camisa' || isCroppedInsumoCategory(insumoCategory)) && (
             <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Gênero</label>
               <select
                 value={insumoGender}
                 onChange={(e) => setInsumoGender(e.target.value)}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
+                disabled={isCroppedInsumoCategory(insumoCategory)}
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 disabled:opacity-60"
               >
                 {GENDERS.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -479,9 +589,9 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção (Opcional)</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção</label>
               <select
                 {...register('collection_id')}
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
@@ -493,7 +603,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
               </select>
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria *</label>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria temática *</label>
               <select
                 {...register('category', { required: 'Categoria é obrigatória' })}
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
@@ -505,7 +615,46 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
               </select>
               {errors.category && <span className="text-red-500 text-xs mt-1 block">{errors.category.message}</span>}
             </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Slug catálogo</label>
+              <select
+                value={catalogSlug}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setCatalogSlugManual(false);
+                    setCatalogSlug(resolveSegmentFromInsumo(insumoCategory, insumoModel, insumoGender));
+                  } else {
+                    setCatalogSlugManual(true);
+                    setCatalogSlug(val);
+                  }
+                }}
+                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
+              >
+                <option value="">Detectar pelo modelo…</option>
+                {PRODUCT_CATALOG_SLUGS.map(({ slug, label }) => (
+                  <option key={slug} value={slug}>{label} ({slug})</option>
+                ))}
+              </select>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                Ex.: Cropped + Feminino → aba <code className="text-white/70">/products?genero=feminino&amp;segmento=cropped</code>
+              </p>
+            </div>
           </div>
+
+          {storePreviewUrls.length > 0 && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80">
+              <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Onde aparece na loja</p>
+              <ul className="space-y-1">
+                {storePreviewUrls.map(({ label, url }) => (
+                  <li key={url}>
+                    <span className="text-white/50">{label}:</span>{' '}
+                    <span className="font-mono text-xs text-[#FF4D00]">{url}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Preços */}

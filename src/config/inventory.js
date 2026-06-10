@@ -64,7 +64,8 @@ export const COLORS = [
   { label: 'Off White', key: 'off', hex: '#F5F1E8' },
   { label: 'White', key: 'wht', hex: '#FFFFFF' },
   { label: 'Verde', key: 'grn', hex: '#2D5016' },
-  { label: 'Vermelho', key: 'red', hex: '#8B0000' }
+  { label: 'Vermelho', key: 'red', hex: '#8B0000' },
+  { label: 'Amarelo', key: 'yel', hex: '#FFD500' }
 ];
 
 const MODEL_PREFIXES = {
@@ -144,6 +145,9 @@ export function getColorsForCategory(category) {
   const cat = normalizeCategory(category);
   if (cat === 'Caneca') {
     return COLORS.filter((c) => c.key === 'wht');
+  }
+  if (cat === 'Acessório') {
+    return COLORS.filter((c) => c.key !== 'yel');
   }
   return COLORS;
 }
