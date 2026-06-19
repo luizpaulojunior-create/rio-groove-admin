@@ -44,7 +44,7 @@ export const MODELS_BY_GENDER = {
 export const MODELS_REGATA = ['Regular', 'Machão'];
 export const MODELS_BONE = ['Trucker', 'Dad Hat', 'Snapback'];
 export const MODEL_CANECA = '330ml';
-export const MATERIAL_CANECA = 'Porcelana';
+export const MATERIAL_CANECA = 'Polímero';
 export const VALID_CANECA_SKU = 'MUG-330-WHT-U';
 
 export const FABRICS = [
@@ -52,7 +52,7 @@ export const FABRICS = [
   'Estonada'
 ];
 
-export const APPAREL_SIZES = ['P', 'M', 'G', 'GG', 'XGG'];
+export const APPAREL_SIZES = ['P', 'M', 'G', 'GG'];
 
 export const SIZES = [
   ...APPAREL_SIZES,
