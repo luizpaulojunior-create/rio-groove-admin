@@ -69,7 +69,7 @@ export default function StorefrontNavigation() {
   };
 
   const handleImportSeed = async () => {
-    if (menuItems.length > 0 && !window.confirm('Substituir o menu atual pelo padrão Rio Groove?')) {
+    if (!window.confirm('Substituir o menu atual pelo padrão editorial Rio Groove (7 itens)?')) {
       return;
     }
     try {
@@ -207,16 +207,16 @@ export default function StorefrontNavigation() {
             )}
           </div>
         </div>
-        <div className="flex gap-3">
-          {!navId && menuItems.length === 0 && (
-            <button
-              onClick={handleImportSeed}
-              disabled={saving}
-              className="btn-secondary flex items-center gap-2 px-6 py-2.5 rounded-xl border border-[#FF4D00]/30 text-[#FF4D00] hover:bg-[#FF4D00]/10 transition-colors"
-            >
-              Importar Menu Padrão
-            </button>
-          )}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleImportSeed}
+            disabled={saving}
+            className="btn-secondary flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-white text-sm"
+            title="Substitui pelo menu editorial atual (7 itens)"
+          >
+            <RefreshCw size={16} />
+            Aplicar menu editorial
+          </button>
           <button 
             onClick={addMenuItem}
             className="btn-secondary flex items-center gap-2 px-6 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-white"
