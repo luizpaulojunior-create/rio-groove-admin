@@ -5,8 +5,8 @@
 
 export const INSUMO_CATEGORY_CROPPED = 'Cropped';
 
-/** Modelos cropped femininos — estoque continua em Camisa. */
-export const CROPPED_MODELS = ['Boxy Cropped', 'Cropped Tradicional'];
+/** Modelos cropped femininos — estoque e cadastro de produto. */
+export const CROPPED_MODELS = ['Cropped Oversized'];
 
 /** Opções do select "Categoria do insumo" no cadastro de produto. */
 export const PRODUCT_FORM_INSUMO_CATEGORIES = [
@@ -89,6 +89,7 @@ export function resolveSegmentFromInsumo(insumo, model, gender) {
   return '';
 }
 
+/** Campo products.category — espelha a coleção quando houver vínculo. */
 export function resolveThemeFromCollection(collection) {
   if (!collection?.name) return '';
   const name = String(collection.name).trim();
@@ -96,6 +97,12 @@ export function resolveThemeFromCollection(collection) {
     (theme) => theme.toLowerCase() === name.toLowerCase()
   );
   return match || name;
+}
+
+export function resolveProductCategory({ collection, fallbackCategory = '' } = {}) {
+  const fromCollection = resolveThemeFromCollection(collection);
+  if (fromCollection) return fromCollection;
+  return String(fallbackCategory || '').trim();
 }
 
 export function findCollectionForTheme(collections, themeName) {

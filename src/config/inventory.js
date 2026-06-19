@@ -33,6 +33,7 @@ export const MODELS_BY_GENDER = {
   ],
   'Feminino': [
     'Baby Tee Altíssima',
+    'Cropped Oversized',
     'Oversized Feminina',
     'Boxy Cropped',
     'Relaxed Fit',
@@ -73,6 +74,7 @@ const MODEL_PREFIXES = {
   'Regular Fit': 'REG',
   'Oversized Tradicional': 'OVT',
   'Baby Tee Altíssima': 'BTA',
+  'Cropped Oversized': 'COS',
   'Oversized Feminina': 'OVF',
   'Boxy Cropped': 'BOX',
   'Cropped Tradicional': 'CRO',
