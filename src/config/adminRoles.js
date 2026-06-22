@@ -36,6 +36,7 @@ export const ROUTE_MIN_ROLES = {
   '/admin/customers': ADMIN_ROLES.VIEWER,
   '/admin/dashboard': ADMIN_ROLES.VIEWER,
   '/admin/stats': ADMIN_ROLES.VIEWER,
+  '/admin/conversion': ADMIN_ROLES.VIEWER,
 };
 
 /** @param {string} pathname */

@@ -21,7 +21,8 @@ import {
   Type,
   Mic2,
   Palette,
-  UserPlus
+  UserPlus,
+  TrendingUp
 } from 'lucide-react';
 
 const menuItems = [
@@ -34,6 +35,7 @@ const menuItems = [
   { path: '/admin/customers', name: 'Clientes', icon: Users },
   { path: '/admin/coupons', name: 'Cupons', icon: Ticket },
   { path: '/admin/stats', name: 'Relatórios', icon: BarChart3 },
+  { path: '/admin/conversion', name: 'Conversão GA4', icon: TrendingUp },
 ];
 
 const growthItems = [

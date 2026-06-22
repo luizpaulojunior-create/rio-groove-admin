@@ -195,4 +195,9 @@ export const analyticsService = {
       return buildTopProducts(orders);
     }
   },
+
+  async getGa4Conversion(period = '7d') {
+    const { data } = await api.get('/analytics/ga4/conversion', { params: { period } });
+    return data;
+  },
 };

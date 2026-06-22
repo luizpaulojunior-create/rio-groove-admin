@@ -18,6 +18,7 @@ export default function Header({ onMenuClick }) {
       case 'customers': return 'Clientes';
       case 'coupons': return 'Cupons';
       case 'stats': return 'Relatórios';
+      case 'conversion': return 'Conversão GA4';
       case 'settings': return 'Configurações';
       default: return 'PAINEL ADMIN';
     }
