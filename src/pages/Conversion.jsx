@@ -46,8 +46,8 @@ export default function Conversion() {
       const data = await analyticsService.getGa4Conversion(period);
       setReport(data);
     } catch (err) {
-      console.error('Erro ao buscar convers„o GA4:', err);
-      setError('N„o foi possÌvel carregar os dados do Google Analytics.');
+      console.error('Erro ao buscar convers√£o GA4:', err);
+      setError('N√£o foi poss√≠vel carregar os dados do Google Analytics.');
       setReport(null);
     } finally {
       setLoading(false);
@@ -72,7 +72,7 @@ export default function Conversion() {
         <div className="flex justify-between items-center">
           <h1 className="font-heading text-4xl flex items-center gap-3">
             <BarChart3 className="text-[var(--color-primary)]" size={32} />
-            Funil de Convers„o (GA4)
+            Funil de Convers√£o (GA4)
           </h1>
         </div>
 
@@ -80,16 +80,16 @@ export default function Conversion() {
           <div className="flex gap-3 items-start">
             <AlertCircle className="text-amber-400 shrink-0 mt-1" size={22} />
             <div className="space-y-3 text-sm text-[var(--color-text-muted)]">
-              <p className="text-white font-medium">IntegraÁ„o GA4 pendente no backend</p>
+              <p className="text-white font-medium">Integra√ß√£o GA4 pendente no backend</p>
               <p>{report.message}</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Propriedade GA4: <strong className="text-white">{report.propertyId}</strong></li>
                 <li>Measurement ID: <strong className="text-white">{report.measurementId}</strong></li>
               </ul>
               <p className="pt-2">
-                No Google Cloud: crie uma conta de serviÁo, baixe o JSON e adicione o e-mail como
+                No Google Cloud: crie uma conta de servi√ßo, baixe o JSON e adicione o e-mail como
                 <strong className="text-white"> Viewer </strong>
-                em Admin ? Gerenciamento de acesso ‡ propriedade no GA4.
+                em Admin ? Gerenciamento de acesso √† propriedade no GA4.
                 Depois configure <code className="text-amber-200">GA4_SERVICE_ACCOUNT_JSON</code> no Render.
               </p>
             </div>
@@ -107,11 +107,11 @@ export default function Conversion() {
         <div>
           <h1 className="font-heading text-4xl flex items-center gap-3">
             <BarChart3 className="text-[var(--color-primary)]" size={32} />
-            Funil de Convers„o (GA4)
+            Funil de Convers√£o (GA4)
           </h1>
           {startDate && endDate && (
             <p className="text-sm text-[var(--color-text-muted)] mt-2">
-              PerÌodo: {startDate} ? {endDate}
+              Per√≠odo: {startDate} ? {endDate}
             </p>
           )}
         </div>
@@ -151,11 +151,11 @@ export default function Conversion() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card-premium">
-          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Sessıes</p>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Sess√µes</p>
           <h3 className="font-heading text-4xl">{overview?.sessions?.toLocaleString('pt-BR') || 0}</h3>
         </div>
         <div className="card-premium">
-          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Usu·rios</p>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Usu√°rios</p>
           <h3 className="font-heading text-4xl">{overview?.activeUsers?.toLocaleString('pt-BR') || 0}</h3>
         </div>
         <div className="card-premium">
@@ -172,15 +172,15 @@ export default function Conversion() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card-premium">
-          <p className="text-xs text-[var(--color-text-muted)]">Convers„o produto ? compra</p>
+          <p className="text-xs text-[var(--color-text-muted)]">Convers√£o produto ? compra</p>
           <p className="font-heading text-3xl text-[#22C55E] mt-1">{insights?.overallConversion || 0}%</p>
         </div>
         <div className="card-premium">
-          <p className="text-xs text-[var(--color-text-muted)]">Abandono apÛs carrinho</p>
+          <p className="text-xs text-[var(--color-text-muted)]">Abandono ap√≥s carrinho</p>
           <p className="font-heading text-3xl text-amber-400 mt-1">{insights?.cartAbandonment || 0}%</p>
         </div>
         <div className="card-premium">
-          <p className="text-xs text-[var(--color-text-muted)]">DesistÍncia no checkout</p>
+          <p className="text-xs text-[var(--color-text-muted)]">Desist√™ncia no checkout</p>
           <p className="font-heading text-3xl text-red-400 mt-1">{insights?.checkoutDropoff || 0}%</p>
         </div>
       </div>
@@ -205,7 +205,7 @@ export default function Conversion() {
                     </div>
                     <div className="text-right shrink-0">
                       <span className="font-heading text-xl">{step.users.toLocaleString('pt-BR')}</span>
-                      <span className="text-[var(--color-text-muted)] text-xs ml-2">usu·rios</span>
+                      <span className="text-[var(--color-text-muted)] text-xs ml-2">usu√°rios</span>
                     </div>
                   </div>
                   <div className="h-3 bg-[var(--color-surface)] rounded-full overflow-hidden">
@@ -241,7 +241,7 @@ export default function Conversion() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{item.label}</span>
-                    <span className="text-[var(--color-text-muted)]">{item.sessions} sessıes</span>
+                    <span className="text-[var(--color-text-muted)]">{item.sessions} sess√µes</span>
                   </div>
                   <div className="flex justify-between text-xs text-[var(--color-text-muted)] mt-1">
                     <span>{item.purchases} compras</span>
@@ -259,7 +259,7 @@ export default function Conversion() {
 
       <div className="card-premium">
         <h3 className="text-2xl font-heading tracking-wide mb-6 border-b border-[var(--color-border)] pb-3 text-white">
-          Produtos ? visualizaÁ„o vs carrinho vs compra
+          Produtos ? visualiza√ß√£o vs carrinho vs compra
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -287,7 +287,7 @@ export default function Conversion() {
             </tbody>
           </table>
           {(!topProducts || topProducts.length === 0) && (
-            <p className="text-sm text-[var(--color-text-muted)] py-4">Sem dados de produtos no perÌodo.</p>
+            <p className="text-sm text-[var(--color-text-muted)] py-4">Sem dados de produtos no per√≠odo.</p>
           )}
         </div>
       </div>
