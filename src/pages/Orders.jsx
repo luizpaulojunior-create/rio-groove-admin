@@ -306,6 +306,10 @@ if (
 
   const handleCancelOrder = () => {
     if (isProcessing) return;
+    if (isOrderPaid(selectedOrder)) {
+      toast.error('Pedido com pagamento confirmado não pode ser cancelado pelo painel.');
+      return;
+    }
     if (!window.confirm('Deseja realmente cancelar este pedido?')) {
       return;
     }
