@@ -267,6 +267,28 @@ function mapOrderLogs(order) {
   ];
 }
 
+export function buildOrderLookupReferences(term) {
+  const raw = String(term || '').trim();
+  if (!raw) return [];
+
+  const refs = new Set([raw]);
+  const year = new Date().getFullYear();
+  const upper = raw.toUpperCase();
+
+  if (/^\d{6,}$/.test(raw)) {
+    const stamp = raw.slice(-8);
+    refs.add(`RG-${year}-${stamp}`);
+    refs.add(`RG-2026-${stamp}`);
+  }
+
+  const rgMatch = upper.match(/^RG-?(\d{4})-?(\d{6,})$/);
+  if (rgMatch) {
+    refs.add(`RG-${rgMatch[1]}-${rgMatch[2]}`);
+  }
+
+  return [...refs];
+}
+
 export function getOrderDisplayStatus(order) {
   if (!order) return 'aguardando_pagamento';
   if (order.timelineStep && STATUS_LABELS[order.timelineStep]) {
@@ -529,7 +551,7 @@ export const ordersService = {
     try {
       const response =
         await api.get(
-          `/orders/${id}`
+          `/orders/${encodeURIComponent(id)}`
         );
 
       const rawData =
@@ -550,6 +572,20 @@ export const ordersService = {
 
       return null;
     }
+  },
+
+  async lookupOrders(term) {
+    const refs = buildOrderLookupReferences(term);
+    const found = [];
+
+    for (const ref of refs) {
+      const order = await this.getOrder(ref);
+      if (order?.id && !found.some((item) => item.id === order.id)) {
+        found.push(order);
+      }
+    }
+
+    return found;
   },
 
   async createOrder(orderData) {

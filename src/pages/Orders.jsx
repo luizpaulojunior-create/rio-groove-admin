@@ -61,13 +61,31 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month
   const [listSearch, setListSearch] = useState('');
+  const [directLookup, setDirectLookup] = useState('');
+  const [directLookupLoading, setDirectLookupLoading] = useState(false);
+
+  const mergeOrders = (baseOrders, extraOrders = []) => {
+    const merged = Array.isArray(baseOrders) ? [...baseOrders] : [];
+    for (const order of extraOrders) {
+      if (order?.id && !merged.some((item) => item.id === order.id)) {
+        merged.unshift(order);
+      }
+    }
+    return merged;
+  };
 
   const fetchOrders = async (showLoading = true, search = listSearch) => {
     try {
       const trimmedSearch = String(search || '').trim();
-      const data = await ordersService.getOrders({
+      let data = await ordersService.getOrders({
         search: trimmedSearch.length >= 2 ? trimmedSearch : undefined,
       });
+
+      if (trimmedSearch.length >= 5) {
+        const directMatches = await ordersService.lookupOrders(trimmedSearch);
+        data = mergeOrders(data, directMatches);
+      }
+
       setOrders(data || []);
     } catch (error) {
       console.error('Erro ao buscar pedidos:', error);
@@ -136,6 +154,29 @@ if (
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
+
+  const handleDirectLookup = async () => {
+    const term = directLookup.trim();
+    if (!term || directLookupLoading) return;
+
+    setDirectLookupLoading(true);
+    try {
+      const matches = await ordersService.lookupOrders(term);
+      if (!matches.length) {
+        toast.error(`Pedido não encontrado: ${term}`);
+        return;
+      }
+
+      setOrders((prev) => mergeOrders(prev, matches));
+      handleViewOrder(matches[0]);
+      toast.success(`Pedido ${matches[0].displayOrderNumber || matches[0].order_number} localizado.`);
+    } catch (error) {
+      console.error(error);
+      toast.error('Falha ao localizar pedido.');
+    } finally {
+      setDirectLookupLoading(false);
+    }
+  };
 
   const getNormalizedStatus = (status) => STATUS_MAP[status] || status;
 
@@ -554,6 +595,24 @@ if (
         <h1 className="font-heading text-3xl sm:text-4xl whitespace-nowrap">Workflow de Pedidos</h1>
         
         <div className="flex flex-1 w-full xl:justify-end items-center gap-3">
+          <div className="flex items-center gap-2 w-full xl:w-auto">
+            <input
+              type="text"
+              value={directLookup}
+              onChange={(e) => setDirectLookup(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDirectLookup()}
+              placeholder="Abrir pedido: RG-2026-25940869"
+              className="min-w-[220px] flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[var(--color-primary)]"
+            />
+            <button
+              type="button"
+              onClick={handleDirectLookup}
+              disabled={directLookupLoading || !directLookup.trim()}
+              className="h-8 px-3 rounded-lg bg-[var(--color-primary)] text-white text-xs font-medium disabled:opacity-50"
+            >
+              {directLookupLoading ? 'Abrindo…' : 'Abrir pedido'}
+            </button>
+          </div>
           <div className="flex items-center gap-2 w-full xl:w-auto overflow-x-auto hide-scrollbar">
             <div className="relative min-w-[140px] flex-1 xl:flex-none">
               <Filter size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
