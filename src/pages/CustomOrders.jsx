@@ -338,10 +338,6 @@ export default function CustomOrders() {
         {
           status,
           admin_notes: adminNotes,
-          shipping_amount: shippingAmount !== '' ? Number(shippingAmount) : '',
-          shipping_cep: cepDigits(shippingCep),
-          shipping_method: shippingMethod,
-          shipping_service_id: shippingServiceId,
         },
         mockupFile,
       );
@@ -570,7 +566,11 @@ export default function CustomOrders() {
                 </div>
                 <div>
                   <p className="text-gray-500 text-xs">Frete</p>
-                  <p className="font-medium">{formatMoney(selected.shipping_amount || 0)}</p>
+                  <p className="font-medium">
+                    {selected.shipping_method
+                      ? formatMoney(selected.shipping_amount || 0)
+                      : 'Cliente escolhe no pagamento'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-xs">Total peça + frete</p>
@@ -701,7 +701,7 @@ export default function CustomOrders() {
             <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-primary" />
-                <p className="text-sm font-medium text-white">Frete — Melhor Envio</p>
+                <p className="text-sm font-medium text-white">Frete — referência (cliente escolhe no pagamento)</p>
               </div>
 
               <div>
@@ -726,8 +726,8 @@ export default function CustomOrders() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Usa peso/dimensões do insumo ({formatInsumoLabel(selected)} · qtd {selected.quantity}).
-                  {shippingMethod ? ` Selecionado: ${shippingMethod}` : ' Escolha uma opção abaixo ou informe valor manual.'}
+                  Estimativa com peso/dimensões do insumo ({formatInsumoLabel(selected)} · qtd {selected.quantity}).
+                  O cliente escolhe transportadora ou retirada no RJ ao pagar a peça.
                 </p>
               </div>
 
@@ -735,46 +735,31 @@ export default function CustomOrders() {
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {shippingQuoteOptions.map((option) => {
                     const optionId = String(option.id);
-                    const active = shippingServiceId === optionId;
                     return (
-                      <button
+                      <div
                         key={optionId}
-                        type="button"
-                        onClick={() => applyShippingOption(option)}
-                        className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          active
-                            ? 'border-primary bg-primary/10 text-white'
-                            : 'border-white/10 bg-black/20 text-gray-300 hover:border-white/25'
-                        }`}
+                        className="w-full text-left rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-gray-300"
                       >
                         <span className="font-medium">{option.label || `${option.company} / ${option.name}`}</span>
                         <span className="float-right text-primary">{formatMoney(option.price)}</span>
                         <span className="block text-xs text-gray-500 mt-0.5">
                           Prazo: {formatShippingDeadline(option)}
                         </span>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Valor do frete (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={shippingAmount}
-                  onChange={(e) => setShippingAmount(e.target.value)}
-                  placeholder="0,00"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Total peça + frete: {formatMoney(
-                    getOrderDisplayPricing({ ...selected, shipping_amount: shippingAmount || 0 }).productTotal,
-                  )}
+              {selected.shipping_method ? (
+                <p className="text-xs text-emerald-400">
+                  Frete escolhido pelo cliente: {selected.shipping_method} ({formatMoney(selected.shipping_amount || 0)})
                 </p>
-              </div>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  Nenhum frete definido ainda — será escolhido pelo cliente no pagamento da peça.
+                </p>
+              )}
             </div>
 
             {selected.order_type === 'exclusive_art' && (

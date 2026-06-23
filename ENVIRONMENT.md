@@ -11,7 +11,7 @@
 | `VITE_SENTRY_DSN` | Não | `src/lib/monitoring.js` | Desligado se vazio |
 | `VITE_STORE_URL` | Recomendada | Links de afiliado | `https://store.riogroovemovimentos.com.br` |
 
-> **Não existe `.env.example`** neste repo — criar localmente a partir desta tabela.
+> Template: [.env.example](./.env.example) — copie para `.env.local`.
 
 ## Arquivo de produção existente
 
@@ -21,9 +21,14 @@
 
 ```env
 VITE_SUPABASE_URL=https://cvpobvvkhcqasumhfwps.supabase.co
-VITE_SUPABASE_ANON_KEY=sua_anon_key
+# Publishable key (sb_publishable_…) — NÃO use eyJ… legacy
+VITE_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxxx
 VITE_API_URL=http://localhost:3000/api
 ```
+
+Ou: `Copy-Item .env.example .env.local` e edite com as chaves do dashboard.
+
+**Chaves:** Supabase → Settings → API → **Publishable key** (mesma URL do backend).
 
 ---
 
@@ -58,6 +63,10 @@ Variáveis no painel Cloudflare Pages → **Settings → Environment variables**
 ```powershell
 # Backend acessível
 Invoke-RestMethod https://rio-groove-backend.onrender.com/api/health
+
+# Auditoria completa (backend repo)
+cd c:\Users\luizp\Downloads\rio-groove-backend-final\rio-groove-backend
+npm run audit:prod
 
 # Build local OK
 npm run build

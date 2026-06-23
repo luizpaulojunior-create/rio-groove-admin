@@ -45,9 +45,17 @@ export default function Conversion() {
     try {
       const data = await analyticsService.getGa4Conversion(period);
       setReport(data);
+      if (data?.fetchError) {
+        setError(data.fetchError);
+      }
     } catch (err) {
       console.error('Erro ao buscar conversão GA4:', err);
-      setError('Não foi possível carregar os dados do Google Analytics.');
+      const apiMsg = err.response?.data?.message;
+      setError(
+        apiMsg
+          ? `Não foi possível carregar os dados do Google Analytics: ${apiMsg}`
+          : 'Não foi possível carregar os dados do Google Analytics. Verifique se o backend está no ar.',
+      );
       setReport(null);
     } finally {
       setLoading(false);
@@ -86,12 +94,20 @@ export default function Conversion() {
                 <li>Propriedade GA4: <strong className="text-white">{report.propertyId}</strong></li>
                 <li>Measurement ID: <strong className="text-white">{report.measurementId}</strong></li>
               </ul>
-              <p className="pt-2">
-                No Google Cloud: crie uma conta de serviço, baixe o JSON e adicione o e-mail como
-                <strong className="text-white"> Viewer </strong>
-                em Admin ? Gerenciamento de acesso à propriedade no GA4.
-                Depois configure <code className="text-amber-200">GA4_SERVICE_ACCOUNT_JSON</code> no Render.
-              </p>
+              <ol className="list-decimal pl-5 space-y-2 pt-1">
+                <li>
+                  Google Cloud: criar conta de serviço, baixar JSON e ativar{' '}
+                  <strong className="text-white">Google Analytics Data API</strong>.
+                </li>
+                <li>
+                  GA4: Admin → Gerenciamento de acesso à propriedade → adicionar o e-mail da conta como{' '}
+                  <strong className="text-white">Viewer</strong>.
+                </li>
+                <li>
+                  Render: <code className="text-amber-200">GA4_PROPERTY_ID=539502234</code> e colar o JSON em{' '}
+                  <code className="text-amber-200">GA4_SERVICE_ACCOUNT_JSON</code> (JSON em uma linha ou base64).
+                </li>
+              </ol>
             </div>
           </div>
         </div>
@@ -111,7 +127,7 @@ export default function Conversion() {
           </h1>
           {startDate && endDate && (
             <p className="text-sm text-[var(--color-text-muted)] mt-2">
-              Período: {startDate} ? {endDate}
+              Período: {startDate} — {endDate}
             </p>
           )}
         </div>
@@ -146,7 +162,10 @@ export default function Conversion() {
       </div>
 
       {error && (
-        <div className="card-premium border border-red-500/30 text-red-400 text-sm p-4">{error}</div>
+        <div className="card-premium border border-red-500/30 text-red-400 text-sm p-4 flex gap-2 items-start">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
