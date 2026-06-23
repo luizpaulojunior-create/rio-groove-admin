@@ -648,35 +648,92 @@ export default function CustomOrders() {
               </div>
             )}
 
-            {selected.custom_order_files?.length > 0 && (
-              <div>
-                <p className="text-gray-500 text-sm mb-2">Arquivos e estampas</p>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {selected.custom_order_files.map((f) => {
-                    const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(f.file_name || f.storage_url || '');
-                    return (
-                      <div key={f.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">
-                          {f.kind === 'customer_art' ? 'Arte do cliente' : f.kind === 'reference' ? 'Referência' : f.kind === 'mockup' ? 'Mockup' : f.kind}
-                        </p>
-                        {isImage && f.storage_url ? (
-                          <a href={f.storage_url} target="_blank" rel="noreferrer" className="block mb-2">
-                            <img
-                              src={f.storage_url}
-                              alt={f.file_name || 'Arte'}
-                              className="w-full max-h-40 object-contain rounded bg-black/40"
-                            />
-                          </a>
-                        ) : null}
-                        <a href={f.storage_url} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline break-all">
-                          {f.file_name || 'Abrir arquivo'}
-                        </a>
+            {selected.custom_order_files?.length > 0 && (() => {
+              const artFiles = selected.custom_order_files.filter(
+                (f) => (f.kind === 'customer_art' || f.kind === 'reference') && f.storage_url,
+              );
+              const mockupFile = selected.custom_order_files.find((f) => f.kind === 'mockup' && f.storage_url);
+              const sourceFiles = artFiles.length
+                ? artFiles
+                : selected.custom_order_files.filter((f) => f.kind === 'customer_art' || f.kind === 'reference');
+              const sourceLabel = artFiles.some((f) => f.kind === 'customer_art')
+                ? 'Arte do cliente'
+                : artFiles.some((f) => f.kind === 'reference')
+                  ? 'Referência'
+                  : 'Arte / referência';
+
+              const renderFileCard = (f, label) => {
+                const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(f.file_name || f.storage_url || '');
+                return (
+                  <div key={f.id} className="rounded-xl border border-white/10 bg-white/5 p-3 h-full flex flex-col">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">{label}</p>
+                    {isImage && f.storage_url ? (
+                      <a href={f.storage_url} target="_blank" rel="noreferrer" className="block flex-1 mb-2">
+                        <img
+                          src={f.storage_url}
+                          alt={f.file_name || label}
+                          className="w-full max-h-[360px] object-contain rounded bg-black/40"
+                        />
+                      </a>
+                    ) : null}
+                    <a href={f.storage_url} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline break-all mt-auto">
+                      {f.file_name || 'Abrir arquivo'}
+                    </a>
+                  </div>
+                );
+              };
+
+              return (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-gray-500 text-sm mb-1">Arte e mockup</p>
+                    <p className="text-xs text-gray-500 mb-3">Compare a arte enviada com o mockup na peça.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        {sourceFiles.length > 0 ? (
+                          sourceFiles.map((f, index) =>
+                            renderFileCard(
+                              f,
+                              sourceFiles.length > 1 ? `${sourceLabel} ${index + 1}` : sourceLabel,
+                            ),
+                          )
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-gray-500 min-h-[180px] flex items-center justify-center">
+                            Sem arte ou referência anexada
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
+                      <div>
+                        {mockupFile ? (
+                          renderFileCard(mockupFile, 'Mockup no produto')
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-gray-500 min-h-[180px] flex items-center justify-center">
+                            Mockup ainda não enviado
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 text-sm mb-2">Todos os arquivos</p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {selected.custom_order_files.map((f) => {
+                        const kindLabel =
+                          f.kind === 'customer_art'
+                            ? 'Arte do cliente'
+                            : f.kind === 'reference'
+                              ? 'Referência'
+                              : f.kind === 'mockup'
+                                ? 'Mockup'
+                                : f.kind;
+                        return renderFileCard(f, kindLabel);
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div>
               <label className="block text-sm text-gray-500 mb-2">Status</label>
