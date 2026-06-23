@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, ImagePlus, Loader2, MessageCircle, Palette, Search, Trash2, Truck, Upload } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight, ImagePlus, Loader2, MessageCircle, Palette, PenLine, Search, Trash2, Truck, Upload } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import DataTable from '../components/DataTable';
@@ -147,7 +147,16 @@ function filterLabel(id) {
   return FILTER_OPTIONS.find((f) => f.id === id)?.label || 'Todos os pedidos';
 }
 
-function MockupUploadField({ file, onChange, orderType }) {
+function MockupManager({
+  file,
+  onChange,
+  orderType,
+  currentMockup,
+  onDeleteMockup,
+  deletingFileId,
+  saving,
+}) {
+  const inputRef = useRef(null);
   const [preview, setPreview] = useState(null);
 
   useEffect(() => {
@@ -164,48 +173,91 @@ function MockupUploadField({ file, onChange, orderType }) {
     ? 'Após enviar, o cliente pode pagar a peça (preço fixo + frete).'
     : 'Após enviar, o status vai para Mockup pronto e o cliente paga a taxa de arte.';
 
+  const isDeleting = currentMockup && deletingFileId === currentMockup.id;
+  const previewUrl = preview || currentMockup?.storage_url || null;
+
+  const openPicker = () => inputRef.current?.click();
+
   return (
-    <div className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-5 space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-          <ImagePlus className="w-5 h-5 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-white">Enviar ou substituir mockup</p>
-          <p className="text-xs text-gray-400 mt-1">{hint}</p>
-          <p className="text-xs text-gray-500 mt-1">Um novo envio substitui o mockup atual. Para só apagar, use o botão &quot;Excluir&quot; na seção Arte e mockup.</p>
-        </div>
-      </div>
-
-      <label className="flex flex-col items-center gap-2 cursor-pointer rounded-lg border border-white/10 bg-black/30 px-4 py-6 hover:border-primary/40 transition-colors">
-        <Upload className="w-6 h-6 text-primary" />
-        <span className="text-sm text-white">Clique ou arraste a imagem do mockup</span>
-        <span className="text-xs text-gray-500">PNG, JPG ou WEBP</span>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => onChange(e.target.files?.[0] || null)}
-          className="sr-only"
-        />
-      </label>
-
-      {file && (
-        <div className="rounded-lg border border-primary/30 bg-black/40 p-3 flex items-center gap-3">
-          {preview ? (
-            <img src={preview} alt="Preview mockup" className="w-16 h-16 object-contain rounded bg-black/60" />
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-white truncate">{file.name}</p>
-            <button
-              type="button"
-              onClick={() => onChange(null)}
-              className="text-xs text-gray-400 hover:text-white mt-1"
-            >
-              Remover
-            </button>
+    <div className="rounded-xl border-2 border-primary/40 bg-primary/5 p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+            <ImagePlus className="w-5 h-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white">Mockup no produto</p>
+            <p className="text-xs text-gray-400 mt-1">{hint}</p>
           </div>
         </div>
+        {currentMockup && !file && (
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={openPicker}
+              disabled={saving || isDeleting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary/40 bg-primary/15 text-primary text-xs font-semibold uppercase tracking-wide hover:bg-primary/25 disabled:opacity-50"
+            >
+              <PenLine className="w-3.5 h-3.5" />
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={() => onDeleteMockup(currentMockup)}
+              disabled={saving || isDeleting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-400 text-xs font-semibold uppercase tracking-wide hover:bg-red-500/20 disabled:opacity-50"
+            >
+              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Excluir
+            </button>
+          </div>
+        )}
+      </div>
+
+      {previewUrl ? (
+        <div className="rounded-lg border border-white/10 bg-black/40 p-3">
+          <img
+            src={previewUrl}
+            alt="Mockup no produto"
+            className="w-full max-h-[280px] object-contain rounded"
+          />
+          {file && (
+            <p className="text-xs text-amber-400 mt-2">
+              Novo arquivo: {file.name} — clique em <strong>Salvar</strong> para publicar.
+            </p>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={openPicker}
+          className="w-full flex flex-col items-center gap-2 rounded-lg border border-dashed border-white/15 bg-black/30 px-4 py-8 hover:border-primary/40 transition-colors"
+        >
+          <Upload className="w-6 h-6 text-primary" />
+          <span className="text-sm text-white">Enviar mockup (PNG, JPG ou WEBP)</span>
+        </button>
       )}
+
+      {previewUrl && (
+        <div className="flex flex-wrap gap-3 text-xs">
+          <button type="button" onClick={openPicker} className="text-gray-400 hover:text-white">
+            Escolher outro arquivo
+          </button>
+          {file && (
+            <button type="button" onClick={() => onChange(null)} className="text-gray-400 hover:text-white">
+              Cancelar troca
+            </button>
+          )}
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => onChange(e.target.files?.[0] || null)}
+        className="sr-only"
+      />
     </div>
   );
 }
@@ -633,10 +685,17 @@ export default function CustomOrders() {
               </div>
             </div>
 
-            <MockupUploadField
+            <MockupManager
               file={mockupFile}
               onChange={setMockupFile}
               orderType={selected.order_type}
+              currentMockup={(() => {
+                const mockups = (selected.custom_order_files || []).filter((f) => f.kind === 'mockup');
+                return mockups.find((f) => f.storage_url) || mockups[mockups.length - 1] || null;
+              })()}
+              onDeleteMockup={handleDeleteFile}
+              deletingFileId={deletingFileId}
+              saving={saving}
             />
 
             <div>
@@ -677,15 +736,16 @@ export default function CustomOrders() {
               </div>
             )}
 
-            {selected.custom_order_files?.length > 0 && (() => {
-              const artFiles = selected.custom_order_files.filter(
+            {(() => {
+              const files = selected.custom_order_files || [];
+              const artFiles = files.filter(
                 (f) => (f.kind === 'customer_art' || f.kind === 'reference') && f.storage_url,
               );
-              const mockupFiles = selected.custom_order_files.filter((f) => f.kind === 'mockup');
+              const mockupFiles = files.filter((f) => f.kind === 'mockup');
               const latestMockup = mockupFiles.find((f) => f.storage_url) || mockupFiles[mockupFiles.length - 1];
               const sourceFiles = artFiles.length
                 ? artFiles
-                : selected.custom_order_files.filter((f) => f.kind === 'customer_art' || f.kind === 'reference');
+                : files.filter((f) => f.kind === 'customer_art' || f.kind === 'reference');
               const sourceLabel = artFiles.some((f) => f.kind === 'customer_art')
                 ? 'Arte do cliente'
                 : artFiles.some((f) => f.kind === 'reference')
@@ -773,7 +833,7 @@ export default function CustomOrders() {
                   <div>
                     <p className="text-gray-500 text-sm mb-2">Todos os arquivos</p>
                     <div className="grid sm:grid-cols-2 gap-3">
-                      {selected.custom_order_files.map((f) => {
+                      {files.map((f) => {
                         const kindLabel =
                           f.kind === 'customer_art'
                             ? 'Arte do cliente'
