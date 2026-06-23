@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import RoleGate from '../components/RoleGate';
+import ApiStatusBanner from '../components/ApiStatusBanner';
 
 export default function AdminLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function AdminLayout() {
         <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
         
         <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
+          <ApiStatusBanner />
           <RoleGate>
             <Outlet />
           </RoleGate>

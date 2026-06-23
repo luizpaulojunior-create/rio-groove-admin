@@ -20,6 +20,7 @@ export function getBackendRootUrl() {
 
 const api = axios.create({
   baseURL: resolveApiBaseUrl(),
+  timeout: 25000,
   headers: {
     'Content-Type': 'application/json',
   },

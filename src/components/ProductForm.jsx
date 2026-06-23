@@ -3,12 +3,11 @@ import { useForm } from 'react-hook-form';
 import UploadArea from './UploadArea';
 import { collectionsService } from '../services/collections';
 import { SIZES, COLORS, GENDERS, getModelsForCategory } from '../config/inventory';
-import { PRODUCT_CATEGORIES, PRODUCT_CATALOG_SLUGS } from '../config/productCategories';
+import { PRODUCT_CATALOG_SLUGS } from '../config/productCategories';
 import {
   parseSegmentFromTags,
   resolveSegmentFromInsumo,
-  resolveThemeFromCollection,
-  findCollectionForTheme,
+  resolveProductCategory,
   buildStorePreviewUrls,
   PRODUCT_FORM_INSUMO_CATEGORIES,
   CROPPED_MODELS,
@@ -78,6 +77,23 @@ function imageHasColor(img) {
   return nameParts.some((part) => FILENAME_COLOR_CODES.includes(part.split('.')[0].toLowerCase()));
 }
 
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
+
+/** URL única: gênero vai no slug (invisível na vitrine), não no nome exibido. */
+function buildProductSlug(name, gender) {
+  const base = slugify(name).replace(/-feminino$/, '').replace(/-masculino$/, '');
+  if (!base) return '';
+  if (String(gender).toLowerCase() === 'feminino') return `${base}-feminino`;
+  return base;
+}
+
 export default function ProductForm({ initialData, onSubmit, onCancel, isLoading, duplicateMode = false }) {
   const { register, handleSubmit, formState: { errors }, control, setValue, reset } = useForm({
         defaultValues: initialData || {
@@ -122,7 +138,10 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
         preview: img.image_url || img.url || img.preview,
         isMain: img.isMain !== undefined ? img.isMain : idx === 0,
         color_key: img.color_key || variantLabelToKey(img.color_variant),
-        ...img
+        color_variant: img.color_variant || '',
+        image_url: img.image_url,
+        sort_order: img.sort_order,
+        alt_text: img.alt_text,
       };
     });
   };
@@ -215,6 +234,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     );
   });
   const [catalogSlugManual, setCatalogSlugManual] = useState(() => Boolean(parseSegmentFromTags(initialData?.tags)));
+  const [slugManual, setSlugManual] = useState(() => Boolean(initialData?.slug && initialData?.id && !duplicateMode));
 
   const insumoModels = useMemo(() => {
     if (isCroppedInsumoCategory(insumoCategory)) return CROPPED_MODELS;
@@ -310,7 +330,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
 
   const nameValue = useWatch({ control, name: 'name' });
   const collectionIdValue = useWatch({ control, name: 'collection_id' });
-  const categoryValue = useWatch({ control, name: 'category' });
   const isCreateFlow = duplicateMode || !initialData?.id;
 
   const selectedCollection = useMemo(
@@ -327,23 +346,16 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     [selectedCollection?.slug, catalogSlug, insumoGender]
   );
 
-  // Coleção → categoria temática (ex.: Malandragem & Rua)
-  useEffect(() => {
-    if (!selectedCollection) return;
-    const theme = resolveThemeFromCollection(selectedCollection);
-    if (theme && theme !== categoryValue) {
-      setValue('category', theme);
-    }
-  }, [selectedCollection, setValue, categoryValue]);
+  const autoCategory = useMemo(
+    () => (selectedCollection ? resolveProductCategory({ collection: selectedCollection }) : ''),
+    [selectedCollection]
+  );
 
-  // Categoria temática → coleção vinculada
   useEffect(() => {
-    if (!categoryValue || collectionIdValue || !collections.length) return;
-    const match = findCollectionForTheme(collections, categoryValue);
-    if (match) {
-      setValue('collection_id', match.id);
+    if (selectedCollection) {
+      setValue('category', resolveProductCategory({ collection: selectedCollection }));
     }
-  }, [categoryValue, collectionIdValue, collections, setValue]);
+  }, [selectedCollection, setValue]);
 
   // Modelo + gênero + insumo → slug catálogo (cropped, oversized…)
   useEffect(() => {
@@ -352,18 +364,11 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
     setCatalogSlug(resolved);
   }, [insumoCategory, insumoModel, insumoGender, catalogSlugManual]);
 
-  // Auto-generate slug from name when criando ou duplicando
+  // Auto-generate slug from name + gênero (URL única; nome na vitrine pode ser igual)
   useEffect(() => {
-    if (isCreateFlow && nameValue) {
-      const generatedSlug = nameValue
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '');
-      setValue('slug', generatedSlug);
-    }
-  }, [nameValue, isCreateFlow, setValue]);
+    if (!isCreateFlow || slugManual || !nameValue) return;
+    setValue('slug', buildProductSlug(nameValue, insumoGender));
+  }, [nameValue, insumoGender, isCreateFlow, slugManual, setValue]);
 
   const handleFormSubmit = (data) => {
     if (isCreateFlow && images.length === 0) {
@@ -387,19 +392,27 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
       catalogTags.push(`segmento:${segment}`);
     }
 
+    const validVariants = variants.filter((v) => String(v.sku || '').trim());
+
     const payload = { 
-      ...data, 
+      ...data,
+      category: resolveProductCategory({ collection: selectedCollection, fallbackCategory: data.category }),
       colors: adminColors, 
       fabricAppearances: selectedFabricAppearances.length > 0 ? selectedFabricAppearances : ['liso', 'estonado'],
       tags: JSON.stringify(catalogTags),
-      variants: JSON.stringify(variants)
+      variants: JSON.stringify(validVariants)
     };
     
-    if (!initialData || imagesChanged) {
+    if (initialData?.id || imagesChanged || images.length > 0) {
       payload.images = images;
     }
     
     onSubmit(payload);
+  };
+
+  const handleInvalidSubmit = (invalidFields) => {
+    const firstError = Object.values(invalidFields)[0];
+    toast.error(firstError?.message || 'Revise os campos obrigatórios antes de salvar.');
   };
 
   const toggleColor = (color) => {
@@ -416,7 +429,7 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
   };
 
   return (
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-10">
+        <form onSubmit={handleSubmit(handleFormSubmit, handleInvalidSubmit)} className="space-y-10">
       {duplicateMode && (
         <div className="rounded-2xl border border-[#FF4D00]/30 bg-[#FF4D00]/10 px-5 py-4 text-sm text-white/90">
           <p className="font-medium text-white mb-1">Duplicando estampa</p>
@@ -551,8 +564,11 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
               <input
                 {...register('name', { required: 'Nome é obrigatório' })}
                 className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-                placeholder="Ex: Zé Pilintra"
+                placeholder="Ex: Samba Brasil"
               />
+              <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                Use o mesmo nome para versões masculina e feminina. O gênero é definido no insumo abaixo; a URL do produto recebe o sufixo automaticamente.
+              </p>
               {errors.name && <span className="text-red-500 text-xs mt-1 block">{errors.name.message}</span>}
             </div>
             
@@ -561,11 +577,17 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
               <div className="flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden focus-within:border-[var(--color-primary)] transition-all duration-300 h-12">
                 <span className="text-[var(--color-text-muted)] pl-5 pr-1 text-sm select-none">/produto/</span>
                 <input
-                  {...register('slug', { required: 'URL do produto é obrigatória' })}
+                  {...register('slug', {
+                    required: 'URL do produto é obrigatória',
+                    onChange: () => setSlugManual(true),
+                  })}
                   className="w-full bg-transparent text-white focus:outline-none h-full pr-5 text-sm"
-                  placeholder="nome-do-produto"
+                  placeholder="samba-brasil-feminino"
                 />
               </div>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                Só aparece na barra de endereço. Feminino: <code className="text-white/70">nome-feminino</code> · Masculino: <code className="text-white/70">nome</code>
+              </p>
               {errors.slug && <span className="text-red-500 text-xs mt-1 block">{errors.slug.message}</span>}
             </div>
           </div>
@@ -589,7 +611,9 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <input type="hidden" {...register('category')} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Coleção</label>
               <select
@@ -601,19 +625,15 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Categoria temática *</label>
-              <select
-                {...register('category', { required: 'Categoria é obrigatória' })}
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300"
-              >
-                <option value="">Selecione uma categoria...</option>
-                {PRODUCT_CATEGORIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              {errors.category && <span className="text-red-500 text-xs mt-1 block">{errors.category.message}</span>}
+              {autoCategory ? (
+                <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                  Classificação interna: <span className="text-white/80">{autoCategory}</span> (automática pela coleção)
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                  Sem coleção — classificação interna fica vazia.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs uppercase tracking-widest font-medium text-[var(--color-text-muted)] mb-2">Slug catálogo</label>
@@ -746,7 +766,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel, isLoading
                     </td>
                     <td className="py-3 pr-2 min-w-[150px]">
                       <input 
-                        required
                         value={v.sku}
                         onChange={(e) => {
                           const newV = [...variants];

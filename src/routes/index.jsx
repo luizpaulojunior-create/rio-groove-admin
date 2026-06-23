@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Products = lazy(() => import('../pages/Products'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
 const Stock = lazy(() => import('../pages/Stock'));
+const InsumoCosts = lazy(() => import('../pages/InsumoCosts'));
 const Collections = lazy(() => import('../pages/Collections'));
 const Stats = lazy(() => import('../pages/Stats'));
 const Conversion = lazy(() => import('../pages/Conversion'));
@@ -49,6 +50,7 @@ export default function AppRoutes() {
         <Route path="products" element={<Products />} />
         <Route path="products/:id" element={<ProductDetail />} />
         <Route path="stock" element={<Stock />} />
+        <Route path="insumo-costs" element={<InsumoCosts />} />
         <Route path="collections" element={<Collections />} />
         <Route path="stats" element={<Stats />} />
         <Route path="conversion" element={<Conversion />} />

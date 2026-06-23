@@ -21,6 +21,7 @@ export function hasMinRole(userRole, minRole) {
 export const ROUTE_MIN_ROLES = {
   '/admin/settings': ADMIN_ROLES.SUPERADMIN,
   '/admin/stock': ADMIN_ROLES.EDITOR,
+  '/admin/insumo-costs': ADMIN_ROLES.EDITOR,
   '/admin/products': ADMIN_ROLES.EDITOR,
   '/admin/orders': ADMIN_ROLES.EDITOR,
   '/admin/custom-orders': ADMIN_ROLES.EDITOR,

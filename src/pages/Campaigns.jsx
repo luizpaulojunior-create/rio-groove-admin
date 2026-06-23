@@ -84,6 +84,13 @@ export default function Campaigns() {
 
     const formData = new FormData(e.target);
     const collectionId = formData.get('collection_id');
+    const showAsPopup = formData.get('show_as_popup') === 'on';
+
+    if (showAsPopup && !collectionId) {
+      toast.error('Popup na home exige uma coleção vinculada (ex.: Copa Rio Groove).');
+      return;
+    }
+
     const data = {
       title: formData.get('title'),
       slug: formData.get('slug'),
@@ -93,7 +100,8 @@ export default function Campaigns() {
       coupon_code: formData.get('coupon_code') || null,
       start_date: formData.get('start_date') || null,
       end_date: formData.get('end_date') || null,
-      active: formData.get('active') === 'on'
+      active: formData.get('active') === 'on',
+      show_as_popup: formData.get('show_as_popup') === 'on',
     };
 
     try {
@@ -231,6 +239,11 @@ export default function Campaigns() {
               }`}>
                 {getCampaignScheduleLabel(campaign)}
               </div>
+              {campaign.show_as_popup && (
+                <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#FF4D00]/20 text-[#FF4D00]">
+                  Popup home
+                </div>
+              )}
             </div>
             
             <div className="p-6 flex-1 flex flex-col">
@@ -377,6 +390,14 @@ export default function Campaigns() {
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm text-[var(--color-text-muted)]">
             <p className="text-white/80 mb-1">Lançamento programado</p>
             <p>Use <strong className="text-white/90">Data de Início</strong> para o card aparecer automaticamente na home. Mantenha a coleção vinculada com status <strong className="text-white/90">Ativa</strong> no dia do lançamento. Campanhas inativas, sem banner ou com coleção inexistente ficam ocultas na loja.</p>
+            <p className="mt-3">
+              Marque <strong className="text-white/90">Popup na home</strong> para abrir um banner modal ao entrar na página inicial (ideal para coleções sazonais como Copa Rio Groove).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input type="checkbox" name="show_as_popup" id="show_as_popup" defaultChecked={Boolean(editingCampaign?.show_as_popup)} className="w-5 h-5 rounded border-white/10 bg-transparent text-[#FF4D00] focus:ring-0 focus:ring-offset-0" />
+            <label htmlFor="show_as_popup" className="text-white">Popup na home (modal ao abrir a loja)</label>
           </div>
 
           <div className="flex items-center gap-3">

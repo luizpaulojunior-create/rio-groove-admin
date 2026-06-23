@@ -21,6 +21,7 @@ import {
   Type,
   Mic2,
   Palette,
+  Calculator,
   UserPlus,
   TrendingUp
 } from 'lucide-react';
@@ -31,6 +32,7 @@ const menuItems = [
   { path: '/admin/custom-orders', name: 'Personalizados', icon: Palette },
   { path: '/admin/products', name: 'Produtos', icon: Package },
   { path: '/admin/stock', name: 'Estoque', icon: Boxes },
+  { path: '/admin/insumo-costs', name: 'Custos de Insumos', icon: Calculator },
   { path: '/admin/collections', name: 'Coleções', icon: Layers },
   { path: '/admin/customers', name: 'Clientes', icon: Users },
   { path: '/admin/coupons', name: 'Cupons', icon: Ticket },

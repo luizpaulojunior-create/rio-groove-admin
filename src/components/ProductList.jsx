@@ -58,33 +58,14 @@ export default function ProductList() {
     }
   }
 
-  const handleSubmit = async (formData, imageFile) => {
+  const handleSubmit = async (formData) => {
     try {
       setFormLoading(true)
-      
-      const payload = new FormData();
-      
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== null && formData[key] !== undefined) {
-          payload.append(key, formData[key]);
-        }
-      });
-      
-      if (imageFile) {
-        payload.append('image', imageFile);
-        
-        if (editingProduct && editingProduct.image_url) {
-          await storageService.deleteProductImage(editingProduct.image_url);
-        }
-      } else if (editingProduct && editingProduct.image_url && !formData.image_url) {
-        payload.append('image_url', '');
-        await storageService.deleteProductImage(editingProduct.image_url);
-      }
 
       if (editingProduct) {
-        await productsService.updateProduct(editingProduct.id, payload)
+        await productsService.updateProduct(editingProduct.id, formData)
       } else {
-        await productsService.createProduct(payload)
+        await productsService.createProduct(formData)
       }
       
       await fetchProducts(false)
@@ -126,7 +107,7 @@ export default function ProductList() {
           initialData={editingProduct} 
           onSubmit={handleSubmit} 
           onCancel={() => setIsFormOpen(false)}
-          loading={formLoading}
+          isLoading={formLoading}
         />
       </div>
     )

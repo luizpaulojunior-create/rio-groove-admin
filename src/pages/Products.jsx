@@ -124,7 +124,7 @@ export default function Products() {
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
       toast.dismiss();
-      toast.error("Erro ao salvar produto.");
+      toast.error(error.message || "Erro ao salvar produto.");
     } finally {
       setIsSubmitting(false);
     }

@@ -6,6 +6,13 @@ import { ordersService } from '../services/orders';
 import { AlertTriangle, AlertCircle, Clock, Package, TrendingUp, Zap, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+function fetchWithTimeout(promise, fallback, ms = 20000) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [stockItems, setStockItems] = useState([]);
@@ -14,14 +21,14 @@ export default function Dashboard() {
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async (showLoading = true) => {
+  const fetchData = async () => {
     try {
       const [statsData, stockData, ordersData, chartResp, topProdResp] = await Promise.all([
-        analyticsService.getDashboardStats().catch(() => ({})),
-        stockService.getStock().catch(() => []),
-        ordersService.getOrders().catch(() => []),
-        analyticsService.getSalesChartData('30d').catch(() => []),
-        analyticsService.getTopProducts().catch(() => []),
+        fetchWithTimeout(analyticsService.getDashboardStats(), null),
+        fetchWithTimeout(stockService.getStock(), []),
+        fetchWithTimeout(ordersService.getOrders(), []),
+        fetchWithTimeout(analyticsService.getSalesChartData('30d'), []),
+        fetchWithTimeout(analyticsService.getTopProducts(), []),
       ]);
 
       const validOrders = Array.isArray(ordersData) ? ordersData : [];
@@ -58,7 +65,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData(false);
+    fetchData();
   }, []);
 
   const lowStockItems = useMemo(() => stockItems.filter(i => Number(i.quantity) > 0 && Number(i.quantity) <= Number(i.min_stock)), [stockItems]);

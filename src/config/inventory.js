@@ -55,9 +55,19 @@ export const FABRICS = [
 
 export const APPAREL_SIZES = ['P', 'M', 'G', 'GG'];
 
+/** Oversized Tradicional masculino — G1 é o maior tamanho (após GG). */
+export const MASCULINO_OVERSIZED_SIZES = ['P', 'M', 'G', 'GG', 'G1'];
+
+/** Acréscimo de preço no tamanho G1 (camisas Oversized masculinas). */
+export const MASCULINO_OVERSIZED_G1_SURCHARGE = 15;
+
 export const SIZES = [
-  ...APPAREL_SIZES,
-  'Tamanho Único'
+  'P',
+  'M',
+  'G',
+  'GG',
+  'G1',
+  'Tamanho Único',
 ];
 
 export const COLORS = [

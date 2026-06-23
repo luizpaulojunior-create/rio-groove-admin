@@ -30,7 +30,7 @@ export default function UploadArea({ images = [], onChange, maxImages = null }) 
       // Auto-detect color from filename (e.g. ze-pilintra-red-01.png)
       let autoColor = '';
       const nameParts = file.name.split('-');
-      const colorCodes = ['red', 'blk', 'wht', 'gre', 'silv', 'off', 'blue', 'grn', 'brn', 'bge'];
+      const colorCodes = ['red', 'blk', 'wht', 'gre', 'silv', 'off', 'blue', 'grn', 'brn', 'bge', 'yel'];
       for (const part of nameParts) {
         const cleanPart = part.split('.')[0].toLowerCase();
         if (colorCodes.includes(cleanPart)) {
@@ -39,12 +39,14 @@ export default function UploadArea({ images = [], onChange, maxImages = null }) 
         }
       }
 
+      const colorMeta = COLORS.find((c) => c.key === autoColor);
       return {
         file,
         preview: URL.createObjectURL(file),
         id: Math.random().toString(36).substr(2, 9),
         isMain: images.length === 0, // first image becomes main automatically
         color_key: autoColor,
+        color_variant: colorMeta?.label || '',
         position: images.length
       };
     });
@@ -108,8 +110,11 @@ export default function UploadArea({ images = [], onChange, maxImages = null }) 
 
   const applyBulkColor = () => {
     if (!bulkColor || selectedImages.length === 0) return;
+    const colorMeta = COLORS.find((c) => c.key === bulkColor);
     const updated = images.map(img => 
-      selectedImages.includes(img.id) ? { ...img, color_key: bulkColor } : img
+      selectedImages.includes(img.id)
+        ? { ...img, color_key: bulkColor, color_variant: colorMeta?.label || '' }
+        : img
     );
     onChange(updated);
     setSelectedImages([]); // clear selection after apply

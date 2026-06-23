@@ -1,4 +1,5 @@
 import api from '../lib/api';
+import { COLORS } from '../config/inventory';
 
 const normalizeArrayField = (value) => {
   if (!value) return [];
@@ -8,6 +9,12 @@ const normalizeArrayField = (value) => {
   return String(value).split(',').map(item => item.trim()).filter(Boolean);
 };
 
+function colorKeyToVariantLabel(colorKey) {
+  if (!colorKey) return '';
+  const match = COLORS.find((c) => c.key === String(colorKey).trim().toLowerCase());
+  return match?.label || '';
+}
+
 function appendImagesToFormData(formData, images) {
   const newImageMeta = [];
 
@@ -16,17 +23,19 @@ function appendImagesToFormData(formData, images) {
       formData.append('images', image.file);
       newImageMeta.push({
         color_key: image.color_key || '',
+        color_variant: image.color_key ? colorKeyToVariantLabel(image.color_key) : '',
         isMain: Boolean(image.isMain),
         sort_order: image.position ?? index,
       });
     } else if (image.url || image.image_url || image.preview) {
+      const colorKey = image.color_key || '';
       formData.append('existing_images', JSON.stringify({
         id: image.id,
         image_url: image.image_url || image.url || image.preview,
         url: image.url || image.image_url || image.preview,
         preview: image.preview || image.image_url || image.url,
-        color_key: image.color_key || '',
-        color_variant: image.color_variant || '',
+        color_key: colorKey,
+        color_variant: colorKey ? colorKeyToVariantLabel(colorKey) : (image.color_variant || ''),
         alt_text: image.alt_text || '',
         isMain: Boolean(image.isMain),
         sort_order: image.position ?? image.sort_order ?? index,
