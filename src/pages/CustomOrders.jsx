@@ -348,7 +348,13 @@ export default function CustomOrders() {
       fetchOrders();
     } catch (err) {
       console.error(err);
-      toast.error('Erro ao salvar pedido.');
+      const isTimeout =
+        err.code === 'ECONNABORTED' || /timeout/i.test(String(err.message || ''));
+      toast.error(
+        isTimeout
+          ? 'O servidor demorou para responder (upload do mockup). Tente de novo em alguns segundos.'
+          : err.response?.data?.error || err.message || 'Erro ao salvar pedido.',
+      );
     } finally {
       setSaving(false);
     }

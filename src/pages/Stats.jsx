@@ -88,9 +88,9 @@ export default function Stats() {
           <h3 className="text-2xl font-heading tracking-wide mb-6 border-b border-[var(--color-border)] pb-3 text-white">
             Receita (30 dias)
           </h3>
-          <div className="flex-1 min-h-[280px]">
+          <div className="flex-1 min-h-[280px] min-w-0">
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
                 <AreaChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" fontSize={12} />

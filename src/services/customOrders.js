@@ -33,7 +33,9 @@ export const customOrdersService = {
     });
     if (mockupFile) form.append('mockup', mockupFile);
 
-    const { data } = await api.patch(`/custom-orders/${id}`, form);
+    const { data } = await api.patch(`/custom-orders/${id}`, form, {
+      timeout: mockupFile ? 120000 : 25000,
+    });
     return data;
   },
 

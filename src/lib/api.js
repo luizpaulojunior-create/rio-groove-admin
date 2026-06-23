@@ -65,8 +65,18 @@ api.interceptors.response.use(
     const maxRetries = 3;
     const retryDelay = 1000;
 
-    // Retry system para erros de rede ou 5xx
-    if ((!error.response || error.response.status >= 500) && originalRequest.retryCount < maxRetries && originalRequest.method !== 'post') {
+    const isTimeout =
+      error.code === 'ECONNABORTED' || /timeout/i.test(String(error.message || ''));
+    const isMultipart = originalRequest.data instanceof FormData;
+
+    // Retry apenas em falhas transitórias — nunca em timeout nem em upload (FormData).
+    if (
+      !isTimeout
+      && !isMultipart
+      && (!error.response || error.response.status >= 500)
+      && originalRequest.retryCount < maxRetries
+      && originalRequest.method !== 'post'
+    ) {
       originalRequest.retryCount += 1;
       console.warn(`[Retry ${originalRequest.retryCount}/${maxRetries}] Retrying request to ${originalRequest.url}`);
       await new Promise(resolve => setTimeout(resolve, retryDelay * originalRequest.retryCount));
