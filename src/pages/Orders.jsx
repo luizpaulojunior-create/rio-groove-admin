@@ -60,10 +60,14 @@ export default function Orders() {
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month
+  const [listSearch, setListSearch] = useState('');
 
-  const fetchOrders = async (showLoading = true) => {
+  const fetchOrders = async (showLoading = true, search = listSearch) => {
     try {
-      const data = await ordersService.getOrders();
+      const trimmedSearch = String(search || '').trim();
+      const data = await ordersService.getOrders({
+        search: trimmedSearch.length >= 2 ? trimmedSearch : undefined,
+      });
       setOrders(data || []);
     } catch (error) {
       console.error('Erro ao buscar pedidos:', error);
@@ -109,8 +113,11 @@ if (
   }, [orders, statusFilter, dateFilter]);
 
   useEffect(() => {
-    fetchOrders(false);
-  }, []);
+    const debounce = window.setTimeout(() => {
+      fetchOrders(false, listSearch);
+    }, listSearch.trim() ? 400 : 0);
+    return () => window.clearTimeout(debounce);
+  }, [listSearch]);
 
   useEffect(() => {
     const refreshInterval = window.setInterval(() => {
@@ -440,16 +447,23 @@ if (
   const columns = [
     {
       header: 'Pedido',
-      accessor: 'id',
+      accessor: 'order_number',
       render: (row) => {
-        const idStr = String(row.id || '');
+        const orderNumber = String(row.displayOrderNumber || row.order_number || row.orderNumber || '').trim();
+        const internalId = String(row.id || '').trim();
+        const label = orderNumber || internalId;
         return (
           <button 
             onClick={() => handleViewOrder(row)}
             className="font-heading text-sm text-[var(--color-primary)] whitespace-nowrap cursor-pointer hover:text-red-400 hover:drop-shadow-[0_0_8px_rgba(255,42,42,0.6)] transition-all text-left" 
-            title={`Ver detalhes do pedido #${idStr}`}
+            title={`Ver pedido ${label}`}
           >
-            #{idStr}
+            <span className="block">#{label}</span>
+            {orderNumber && internalId && orderNumber !== internalId && (
+              <span className="block text-[10px] text-[var(--color-text-muted)] font-sans normal-case tracking-normal mt-0.5">
+                ID {internalId.slice(0, 8)}…
+              </span>
+            )}
           </button>
         );
       }
@@ -579,7 +593,9 @@ if (
           <DataTable
             columns={columns}
             data={filteredOrders}
-            searchPlaceholder="Buscar por ID, Cliente, CPF..."
+            searchPlaceholder="Buscar por RG-2026…, cliente, e-mail ou CPF..."
+            searchValue={listSearch}
+            onSearchChange={setListSearch}
           />
         </div>
       )}
@@ -587,7 +603,7 @@ if (
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={`PEDIDO #${selectedOrder?.id}`}
+        title={`PEDIDO #${selectedOrder?.displayOrderNumber || selectedOrder?.order_number || selectedOrder?.orderNumber || selectedOrder?.id}`}
         maxWidth="max-w-[1200px]"
       >
         {selectedOrder && (

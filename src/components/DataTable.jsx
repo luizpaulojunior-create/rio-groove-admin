@@ -11,23 +11,44 @@ export default function DataTable({
   onRowClick,
   hideToolbar = false,
   searchPlaceholder = 'Buscar...',
+  searchValue,
+  onSearchChange,
   onAdd,
   addButtonText = 'Adicionar',
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
+  const searchTerm = searchValue !== undefined ? searchValue : internalSearchTerm;
+
+  const setSearchTerm = (value) => {
+    if (onSearchChange) {
+      onSearchChange(value);
+    } else {
+      setInternalSearchTerm(value);
+    }
+  };
+
+  const rowMatchesSearch = (item, term) => {
+    if (!term) return true;
+    const needle = term.toLowerCase();
+
+    if (item?.searchText && String(item.searchText).includes(needle)) {
+      return true;
+    }
+
+    return Object.values(item !== null && typeof item === 'object' ? item : {}).some((val) => {
+      if (val === null || val === undefined) return false;
+      if (typeof val === 'object') {
+        return Object.values(val).some((nested) => {
+          if (nested === null || nested === undefined || typeof nested === 'object') return false;
+          return String(nested).toLowerCase().includes(needle);
+        });
+      }
+      return String(val).toLowerCase().includes(needle);
+    });
+  };
 
   const filteredData = Array.isArray(data)
-    ? data.filter((item) => {
-        if (!searchTerm) return true;
-
-        return Object.values(item !== null && typeof item === 'object' ? item : {}).some(
-          (val) => {
-            if (val === null || val === undefined) return false;
-            if (typeof val === 'object') return false;
-            return String(val).toLowerCase().includes(searchTerm.toLowerCase());
-          }
-        );
-      })
+    ? data.filter((item) => rowMatchesSearch(item, searchTerm))
     : [];
 
   return (

@@ -343,9 +343,31 @@ function normalizeOrder(order) {
     'pending';
 
   const normalizedStatus = normalizeStatus(order);
+  const orderNumber = String(order?.order_number || order?.orderNumber || '').trim();
+  const externalReference = String(order?.external_reference || order?.externalReference || '').trim();
+  const customerName = String(
+    order?.customer_name || customer?.name || '',
+  ).trim();
+  const customerEmail = String(
+    order?.customer_email || customer?.email || '',
+  ).trim();
 
   return {
     ...order,
+
+    order_number: orderNumber || null,
+    orderNumber: orderNumber || null,
+    external_reference: externalReference || null,
+    externalReference: externalReference || null,
+    displayOrderNumber: orderNumber || externalReference || String(order?.id || ''),
+    searchText: [
+      orderNumber,
+      externalReference,
+      customerName,
+      customerEmail,
+      order?.customer_cpf || customer?.cpf || '',
+      String(order?.id || ''),
+    ].filter(Boolean).join(' ').toLowerCase(),
 
     // CLIENTE
     customer: {
@@ -468,10 +490,15 @@ CEP: ${address?.cep || '-'}
 }
 
 export const ordersService = {
-  async getOrders() {
+  async getOrders(options = {}) {
     try {
+      const params = { limit: options.limit || 200 };
+      if (options.search) {
+        params.search = options.search;
+      }
+
       const response =
-        await api.get('/orders', { params: { limit: 200 } });
+        await api.get('/orders', { params });
 
       const rawData =
         response?.data;
