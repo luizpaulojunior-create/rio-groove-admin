@@ -98,6 +98,13 @@ function normalizeStatus(order) {
 
   const paid = isOrderPaid(order);
 
+  if (paid && order.fulfillment_status === 'cancelado') {
+    const mpStatus = String(order.mercado_pago_status || '').toLowerCase();
+    if (!['refunded', 'charged_back'].includes(mpStatus)) {
+      return 'pagamento_aprovado';
+    }
+  }
+
   if (paid) {
     const fulfillment = order.fulfillment_status;
     if (!fulfillment || fulfillment === 'aguardando_pagamento') {

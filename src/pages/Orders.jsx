@@ -7,7 +7,7 @@ import {
   Settings, ArrowRight, Search, Filter 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { ordersService, isPickupOrder, getOrderDisplayStatus } from '../services/orders';
+import { ordersService, isPickupOrder, getOrderDisplayStatus, isOrderPaid } from '../services/orders';
 import { shippingService } from '../services/shipping';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
@@ -892,6 +892,36 @@ if (
                   }
                 }
                 
+                if (isCancelled && isOrderPaid(selectedOrder)) {
+                  return (
+                    <div className="bg-[#0D0D0D] border border-emerald-500/25 rounded-[24px] p-6 space-y-4">
+                      <h2 className="font-heading text-[22px] uppercase tracking-widest font-bold leading-tight text-emerald-400">
+                        Pagamento confirmado
+                      </h2>
+                      <p className="font-sans text-[13px] text-white/60 leading-relaxed">
+                        O Mercado Pago aprovou este pedido, mas um webhook posterior o marcou como cancelado por engano.
+                        Reative para seguir com a produção e a retirada.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus('pagamento_aprovado')}
+                        disabled={isProcessing}
+                        className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <CheckCircle2 size={18} /> Reativar pagamento
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus('aguardando_producao')}
+                        disabled={isProcessing}
+                        className="w-full h-12 bg-[#EAB308] text-black rounded-2xl text-[14px] font-medium hover:bg-[#dca506] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <ArrowRight size={18} /> Enviar para Produção
+                      </button>
+                    </div>
+                  );
+                }
+
                 if (isCancelled) {
                   return (
                      <div className="bg-[#0D0D0D] border border-red-500/20 rounded-[24px] p-6">
