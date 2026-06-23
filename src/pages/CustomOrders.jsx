@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, ImagePlus, Loader2, MessageCircle, Palette, Search, Truck, Upload } from 'lucide-react';
+import { ChevronRight, ImagePlus, Loader2, MessageCircle, Palette, Search, Trash2, Truck, Upload } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import DataTable from '../components/DataTable';
@@ -171,8 +171,9 @@ function MockupUploadField({ file, onChange, orderType }) {
           <ImagePlus className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-medium text-white">Enviar mockup para o cliente</p>
+          <p className="text-sm font-medium text-white">Enviar ou substituir mockup</p>
           <p className="text-xs text-gray-400 mt-1">{hint}</p>
+          <p className="text-xs text-gray-500 mt-1">Um novo envio substitui o mockup atual. Para só apagar, use o botão &quot;Excluir&quot; na seção Arte e mockup.</p>
         </div>
       </div>
 
@@ -254,6 +255,7 @@ export default function CustomOrders() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [status, setStatus] = useState('received');
   const [mockupFile, setMockupFile] = useState(null);
+  const [deletingFileId, setDeletingFileId] = useState(null);
   const [mpPaymentId, setMpPaymentId] = useState('');
   const [reconcileLoading, setReconcileLoading] = useState(false);
 
@@ -326,6 +328,27 @@ export default function CustomOrders() {
       toast.error(err.response?.data?.error || err.message || 'Erro ao sincronizar pagamento.');
     } finally {
       setReconcileLoading(false);
+    }
+  }
+
+  async function handleDeleteFile(file) {
+    if (!selected || !file?.id) return;
+    const kindLabel = file.kind === 'mockup' ? 'mockup' : 'arquivo';
+    if (!window.confirm(`Remover este ${kindLabel} do pedido? O cliente deixará de vê-lo na loja.`)) {
+      return;
+    }
+    setDeletingFileId(file.id);
+    try {
+      const updated = await customOrdersService.deleteFile(selected.id, file.id);
+      toast.success(file.kind === 'mockup' ? 'Mockup removido.' : 'Arquivo removido.');
+      setSelected(updated);
+      setStatus(updated?.status || status);
+      fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.message || 'Erro ao remover arquivo.');
+    } finally {
+      setDeletingFileId(null);
     }
   }
 
@@ -658,7 +681,8 @@ export default function CustomOrders() {
               const artFiles = selected.custom_order_files.filter(
                 (f) => (f.kind === 'customer_art' || f.kind === 'reference') && f.storage_url,
               );
-              const mockupFile = selected.custom_order_files.find((f) => f.kind === 'mockup' && f.storage_url);
+              const mockupFiles = selected.custom_order_files.filter((f) => f.kind === 'mockup');
+              const latestMockup = mockupFiles.find((f) => f.storage_url) || mockupFiles[mockupFiles.length - 1];
               const sourceFiles = artFiles.length
                 ? artFiles
                 : selected.custom_order_files.filter((f) => f.kind === 'customer_art' || f.kind === 'reference');
@@ -668,11 +692,26 @@ export default function CustomOrders() {
                   ? 'Referência'
                   : 'Arte / referência';
 
-              const renderFileCard = (f, label) => {
+              const renderFileCard = (f, label, { allowDelete = false } = {}) => {
                 const isImage = /\.(png|jpe?g|webp|gif|svg)$/i.test(f.file_name || f.storage_url || '');
+                const isDeleting = deletingFileId === f.id;
                 return (
                   <div key={f.id} className="rounded-xl border border-white/10 bg-white/5 p-3 h-full flex flex-col">
-                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">{label}</p>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
+                      {allowDelete && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFile(f)}
+                          disabled={isDeleting || saving}
+                          className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-red-400 hover:text-red-300 disabled:opacity-50"
+                          title="Excluir arquivo"
+                        >
+                          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          Excluir
+                        </button>
+                      )}
+                    </div>
                     {isImage && f.storage_url ? (
                       <a href={f.storage_url} target="_blank" rel="noreferrer" className="block flex-1 mb-2">
                         <img
@@ -710,11 +749,21 @@ export default function CustomOrders() {
                         )}
                       </div>
                       <div>
-                        {mockupFile ? (
-                          renderFileCard(mockupFile, 'Mockup no produto')
+                        {latestMockup ? (
+                          renderFileCard(latestMockup, 'Mockup no produto', { allowDelete: true })
                         ) : (
                           <div className="rounded-xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-gray-500 min-h-[180px] flex items-center justify-center">
                             Mockup ainda não enviado
+                          </div>
+                        )}
+                        {mockupFiles.length > 1 && (
+                          <div className="mt-3 space-y-2">
+                            <p className="text-[10px] uppercase tracking-wider text-gray-500">Mockups antigos</p>
+                            {mockupFiles
+                              .filter((f) => f.id !== latestMockup?.id)
+                              .map((f, index) =>
+                                renderFileCard(f, `Mockup ${index + 1}`, { allowDelete: true }),
+                              )}
                           </div>
                         )}
                       </div>
@@ -733,7 +782,9 @@ export default function CustomOrders() {
                               : f.kind === 'mockup'
                                 ? 'Mockup'
                                 : f.kind;
-                        return renderFileCard(f, kindLabel);
+                        return renderFileCard(f, kindLabel, {
+                          allowDelete: f.kind === 'mockup',
+                        });
                       })}
                     </div>
                   </div>

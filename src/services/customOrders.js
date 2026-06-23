@@ -55,6 +55,11 @@ export const customOrdersService = {
     });
     return data;
   },
+
+  async deleteFile(orderId, fileId) {
+    const { data } = await api.delete(`/custom-orders/${orderId}/files/${fileId}`);
+    return data;
+  },
 };
 
 export function formatInsumoLabel(order) {
