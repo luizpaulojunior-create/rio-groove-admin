@@ -79,8 +79,38 @@ function resolveShippingAmount(order, raw, shipping) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isOrderPaid(order) {
+  if (!order) return false;
+  const paymentStatus = String(order.payment_status || '').toLowerCase();
+  const orderStatus = String(order.status || '').toLowerCase();
+  return (
+    paymentStatus === 'paid' ||
+    paymentStatus === 'approved' ||
+    Boolean(order.paid_at) ||
+    orderStatus === 'paid' ||
+    orderStatus === 'fulfilled' ||
+    orderStatus === 'pagamento_aprovado'
+  );
+}
+
 function normalizeStatus(order) {
   if (!order) return 'aguardando_pagamento';
+
+  const paid = isOrderPaid(order);
+
+  if (paid) {
+    const fulfillment = order.fulfillment_status;
+    if (!fulfillment || fulfillment === 'aguardando_pagamento') {
+      return 'pagamento_aprovado';
+    }
+    if (fulfillment === 'estoque_reservado') {
+      return 'aguardando_producao';
+    }
+    if (STATUS_LABELS[fulfillment]) {
+      return fulfillment;
+    }
+    return 'pagamento_aprovado';
+  }
 
   if (order.fulfillment_status && STATUS_LABELS[order.fulfillment_status]) {
     if (order.fulfillment_status === 'estoque_reservado') {
@@ -236,6 +266,19 @@ function mapOrderLogs(order) {
       : []),
   ];
 }
+
+export function getOrderDisplayStatus(order) {
+  if (!order) return 'aguardando_pagamento';
+  if (order.timelineStep && STATUS_LABELS[order.timelineStep]) {
+    return order.timelineStep;
+  }
+  if (order.status && STATUS_LABELS[order.status]) {
+    return order.status;
+  }
+  return normalizeStatus(order);
+}
+
+export { isOrderPaid };
 
 export function isPickupOrder(order) {
   const method = String(
@@ -428,7 +471,7 @@ export const ordersService = {
   async getOrders() {
     try {
       const response =
-        await api.get('/orders');
+        await api.get('/orders', { params: { limit: 200 } });
 
       const rawData =
         response?.data;
@@ -495,6 +538,15 @@ export const ordersService = {
   async updateOrderStatus(id, status, extraData = {}) {
     const { data } = await api.put(`/orders/${id}/status`, { status, ...extraData });
     return normalizeOrder(data?.order || data);
+  },
+
+  async reconcilePayment(reference, paymentId) {
+    const ref = reference || '';
+    const { data } = await api.post(
+      `/orders/${encodeURIComponent(ref)}/reconcile-payment-admin`,
+      { payment_id: paymentId },
+    );
+    return data;
   },
 
   async deleteOrder(id) {

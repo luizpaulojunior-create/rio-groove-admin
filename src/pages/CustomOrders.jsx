@@ -1,22 +1,135 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ChevronRight, Loader2, Palette, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronRight, ImagePlus, Loader2, MessageCircle, Palette, Search, Truck, Upload } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import DataTable from '../components/DataTable';
 import {
+  buildAdminWhatsAppUrl,
   CUSTOM_ORDER_STATUSES,
   customOrdersService,
   formatInsumoLabel,
 } from '../services/customOrders';
+import { getOrderDisplayPricing } from '../config/customPricing';
 
 function statusLabel(id) {
   return CUSTOM_ORDER_STATUSES.find((s) => s.id === id)?.label || id;
+}
+
+function formatCepInput(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function cepDigits(value) {
+  return String(value || '').replace(/\D/g, '').slice(0, 8);
+}
+
+function formatMoney(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatShippingDeadline(option) {
+  const days =
+    parseInt(String(option.custom_delivery_time), 10)
+    || parseInt(String(option.delivery_days), 10)
+    || parseInt(String(option.delivery_time), 10)
+    || 0;
+  if (days <= 0) {
+    const raw = String(option.delivery_time || '').trim();
+    if (raw && !/^\d+$/.test(raw)) return raw;
+    return 'Prazo a calcular';
+  }
+  if (days === 1) return '1 dia útil';
+  return `${days} dias úteis`;
+}
+
+function paymentBadge(status) {
+  const map = {
+    paid: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    not_required: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
+  };
+  const label = {
+    paid: 'Pago',
+    pending: 'Pendente',
+    not_required: 'N/A',
+  };
+  const cls = map[status] || map.pending;
+  return (
+    <span className={`inline-flex px-2 py-0.5 rounded border text-[10px] uppercase tracking-wide ${cls}`}>
+      {label[status] || status || '—'}
+    </span>
+  );
+}
+
+function paymentPill(label, status) {
+  const map = {
+    paid: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400',
+    pending: 'border-amber-500/25 bg-amber-500/10 text-amber-400',
+    not_required: 'border-white/10 bg-white/5 text-gray-500',
+  };
+  const text = {
+    paid: 'Pago',
+    pending: 'Pend.',
+    not_required: '—',
+  };
+  const cls = map[status] || map.pending;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap ${cls}`}
+      title={`${label}: ${text[status] || status || 'pendente'}`}
+    >
+      <span className="text-gray-500 font-normal">{label}</span>
+      <span className="font-semibold uppercase">{text[status] || status || '?'}</span>
+    </span>
+  );
+}
+
+function PaymentStatusCell({ row }) {
+  const items = [];
+  if (row.order_type === 'exclusive_art') {
+    items.push({ label: 'Arte', status: row.art_payment_status });
+  }
+  items.push({ label: 'Peça', status: row.product_payment_status });
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {items.map((item) => (
+        <span key={item.label}>{paymentPill(item.label, item.status)}</span>
+      ))}
+    </div>
+  );
 }
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'Todos os pedidos' },
   ...CUSTOM_ORDER_STATUSES.map((s) => ({ id: s.id, label: s.label })),
 ];
+
+const TIMELINE = [
+  { id: 'received', label: 'Recebido' },
+  { id: 'reviewing', label: 'Análise' },
+  { id: 'mockup_ready', label: 'Mockup' },
+  { id: 'art_paid', label: 'Arte paga' },
+  { id: 'awaiting_product_payment', label: 'Peça' },
+  { id: 'in_production', label: 'Produção' },
+  { id: 'shipped', label: 'Enviado' },
+  { id: 'completed', label: 'Concluído' },
+];
+
+function timelineForOrder(order) {
+  if (order?.order_type === 'ready_art') {
+    return TIMELINE.filter((s) => !['mockup_ready', 'art_paid'].includes(s.id));
+  }
+  return TIMELINE;
+}
+
+function statusIndex(status, steps) {
+  const idx = steps.findIndex((s) => s.id === status);
+  return idx >= 0 ? idx : 0;
+}
 
 function nextStatusId(currentId) {
   const idx = CUSTOM_ORDER_STATUSES.findIndex((s) => s.id === currentId);
@@ -34,6 +147,96 @@ function filterLabel(id) {
   return FILTER_OPTIONS.find((f) => f.id === id)?.label || 'Todos os pedidos';
 }
 
+function MockupUploadField({ file, onChange, orderType }) {
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return undefined;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const hint = orderType === 'ready_art'
+    ? 'Após enviar, o cliente pode pagar a peça (preço fixo + frete).'
+    : 'Após enviar, o status vai para Mockup pronto e o cliente paga a taxa de arte.';
+
+  return (
+    <div className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-5 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+          <ImagePlus className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-white">Enviar mockup para o cliente</p>
+          <p className="text-xs text-gray-400 mt-1">{hint}</p>
+        </div>
+      </div>
+
+      <label className="flex flex-col items-center gap-2 cursor-pointer rounded-lg border border-white/10 bg-black/30 px-4 py-6 hover:border-primary/40 transition-colors">
+        <Upload className="w-6 h-6 text-primary" />
+        <span className="text-sm text-white">Clique ou arraste a imagem do mockup</span>
+        <span className="text-xs text-gray-500">PNG, JPG ou WEBP</span>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => onChange(e.target.files?.[0] || null)}
+          className="sr-only"
+        />
+      </label>
+
+      {file && (
+        <div className="rounded-lg border border-primary/30 bg-black/40 p-3 flex items-center gap-3">
+          {preview ? (
+            <img src={preview} alt="Preview mockup" className="w-16 h-16 object-contain rounded bg-black/60" />
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-white truncate">{file.name}</p>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="text-xs text-gray-400 hover:text-white mt-1"
+            >
+              Remover
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderTimeline({ order, currentStatus }) {
+  const steps = useMemo(() => timelineForOrder(order), [order]);
+  const activeIdx = statusIndex(currentStatus, steps);
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {steps.map((step, idx) => {
+        const done = idx < activeIdx || currentStatus === 'completed';
+        const active = step.id === currentStatus;
+        return (
+          <div
+            key={step.id}
+            className={`px-2 py-1 rounded text-[10px] uppercase tracking-wide border ${
+              active
+                ? 'border-primary bg-primary/15 text-primary'
+                : done
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                  : 'border-white/10 bg-white/5 text-gray-500'
+            }`}
+          >
+            {step.label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function CustomOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +244,18 @@ export default function CustomOrders() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [revisionLoading, setRevisionLoading] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
-  const [quoteAmount, setQuoteAmount] = useState('');
+  const [shippingAmount, setShippingAmount] = useState('');
+  const [shippingCep, setShippingCep] = useState('');
+  const [shippingMethod, setShippingMethod] = useState('');
+  const [shippingServiceId, setShippingServiceId] = useState('');
+  const [shippingQuoteOptions, setShippingQuoteOptions] = useState([]);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [status, setStatus] = useState('received');
   const [mockupFile, setMockupFile] = useState(null);
+  const [mpPaymentId, setMpPaymentId] = useState('');
+  const [reconcileLoading, setReconcileLoading] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -83,9 +294,39 @@ export default function CustomOrders() {
     }
     setSelected(detail);
     setAdminNotes(detail.admin_notes || '');
-    setQuoteAmount(detail.quote_amount != null ? String(detail.quote_amount) : '');
+    setShippingAmount(detail.shipping_amount != null ? String(detail.shipping_amount) : '');
+    setShippingCep(formatCepInput(detail.shipping_cep || ''));
+    setShippingMethod(detail.shipping_method || '');
+    setShippingServiceId(detail.shipping_service_id || '');
+    setShippingQuoteOptions([]);
     setStatus(detail.status || 'received');
     setMockupFile(null);
+    setMpPaymentId('');
+  }
+
+  async function handleReconcilePayment() {
+    if (!selected || !mpPaymentId.trim()) {
+      toast.warn('Informe o ID do pagamento no Mercado Pago.');
+      return;
+    }
+    setReconcileLoading(true);
+    try {
+      const result = await customOrdersService.reconcilePayment(selected.id, mpPaymentId.trim());
+      if (result.reconciled) {
+        toast.success(result.alreadyPaid ? 'Pagamento já estava sincronizado.' : 'Pagamento sincronizado com sucesso.');
+        const updated = result.order || (await customOrdersService.getOrder(selected.id));
+        setSelected(updated);
+        setStatus(updated?.status || status);
+        fetchOrders();
+      } else {
+        toast.warn(result.reason || 'Pagamento ainda não aprovado no Mercado Pago.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.message || 'Erro ao sincronizar pagamento.');
+    } finally {
+      setReconcileLoading(false);
+    }
   }
 
   async function handleSave() {
@@ -97,18 +338,74 @@ export default function CustomOrders() {
         {
           status,
           admin_notes: adminNotes,
-          quote_amount: quoteAmount ? Number(quoteAmount) : '',
+          shipping_amount: shippingAmount !== '' ? Number(shippingAmount) : '',
+          shipping_cep: cepDigits(shippingCep),
+          shipping_method: shippingMethod,
+          shipping_service_id: shippingServiceId,
         },
         mockupFile,
       );
       toast.success('Pedido atualizado.');
       setSelected(updated);
+      setStatus(updated.status || status);
+      setMockupFile(null);
       fetchOrders();
     } catch (err) {
       console.error(err);
       toast.error('Erro ao salvar pedido.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleQuoteShipping() {
+    if (!selected) return;
+    const cep = cepDigits(shippingCep);
+    if (cep.length !== 8) {
+      toast.warn('Informe o CEP de entrega (8 dígitos).');
+      return;
+    }
+    setQuoteLoading(true);
+    try {
+      const result = await customOrdersService.quoteShipping(selected.id, cep);
+      setShippingQuoteOptions(result?.options || []);
+      if (result?.cep) setShippingCep(formatCepInput(result.cep));
+      if (!result?.options?.length) {
+        toast.warn('Nenhuma opção de frete retornada pelo Melhor Envio.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.message || 'Erro ao cotar frete.');
+    } finally {
+      setQuoteLoading(false);
+    }
+  }
+
+  function applyShippingOption(option) {
+    setShippingAmount(String(Number(option.price) || 0));
+    setShippingMethod(option.label || `${option.company} / ${option.name}`);
+    setShippingServiceId(String(option.id || option.service_code || ''));
+  }
+
+  async function handleIncrementRevision() {
+    if (!selected) return;
+    const max = Number(selected.max_revisions) || 3;
+    const current = Number(selected.revision_count) || 0;
+    if (current >= max) {
+      toast.warn('Limite de revisões atingido.');
+      return;
+    }
+    setRevisionLoading(true);
+    try {
+      const updated = await customOrdersService.incrementRevision(selected.id);
+      toast.success('Revisão registrada.');
+      setSelected(updated);
+      fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao registrar revisão.');
+    } finally {
+      setRevisionLoading(false);
     }
   }
 
@@ -167,11 +464,19 @@ export default function CustomOrders() {
       ),
     },
     {
+      header: 'Pagamentos',
+      accessor: 'art_payment_status',
+      render: (row) => <PaymentStatusCell row={row} />,
+    },
+    {
       header: 'Data',
       accessor: 'created_at',
       render: (row) => new Date(row.created_at).toLocaleDateString('pt-BR'),
     },
   ];
+
+  const detailTotal = selected ? getOrderDisplayPricing(selected).productTotal : null;
+  const displayPricing = selected ? getOrderDisplayPricing(selected) : null;
 
   return (
     <div className="p-8 space-y-6">
@@ -212,7 +517,7 @@ export default function CustomOrders() {
         </div>
       </div>
       <p className="text-xs text-gray-500 -mt-2">
-        Use &quot;Próximo&quot; para alternar o filtro da lista (todos → recebido → em análise…). Dentro do pedido, o mesmo botão muda o status do cliente.
+        Use &quot;Próximo&quot; para alternar o filtro da lista. No pedido, avance o status manualmente ou envie o mockup para avançar automaticamente.
       </p>
 
       {loading ? (
@@ -243,7 +548,71 @@ export default function CustomOrders() {
                 <p>{formatInsumoLabel(selected)} — {selected.model}</p>
                 <p className="text-gray-400">{selected.genero} · Qtd {selected.quantity}</p>
                 <p className="text-gray-400">Cor: {selected.blank_color || '—'}</p>
+                <p className="text-gray-400 mt-1">
+                  {selected.order_type === 'ready_art' ? 'Arte pronta' : 'Arte exclusiva'}
+                </p>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3">
+              <p className="text-xs uppercase tracking-wider text-gray-500">Preços fixos — sem orçamento manual</p>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                {selected.order_type === 'exclusive_art' && (
+                  <div>
+                    <p className="text-gray-500 text-xs">Taxa de arte</p>
+                    <p className="font-medium">{formatMoney(displayPricing?.artFee ?? selected.art_fee_amount)}</p>
+                    <div className="mt-1">{paymentBadge(selected.art_payment_status)}</div>
+                  </div>
+                )}
+                <div>
+                  <p className="text-gray-500 text-xs">Peça (un.)</p>
+                  <p className="font-medium">{formatMoney(displayPricing?.productUnit ?? selected.product_unit_amount)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Frete</p>
+                  <p className="font-medium">{formatMoney(selected.shipping_amount || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Total peça + frete</p>
+                  <p className="font-medium text-primary">{formatMoney(detailTotal)}</p>
+                  <div className="mt-1">{paymentBadge(selected.product_payment_status)}</div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                <p className="text-xs uppercase tracking-wider text-gray-500">Sincronizar Mercado Pago</p>
+                <p className="text-xs text-gray-500">
+                  Se o valor entrou no MP mas o admin não atualizou, cole o <strong className="text-gray-300">ID do pagamento</strong> (número da transação) e sincronize.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={mpPaymentId}
+                    onChange={(e) => setMpPaymentId(e.target.value)}
+                    placeholder="Ex: 12345678901"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={reconcileLoading}
+                    onClick={handleReconcilePayment}
+                    className="px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm hover:bg-emerald-500/25 disabled:opacity-50"
+                  >
+                    {reconcileLoading ? 'Sincronizando…' : 'Sincronizar pagamento'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <MockupUploadField
+              file={mockupFile}
+              onChange={setMockupFile}
+              orderType={selected.order_type}
+            />
+
+            <div>
+              <p className="text-gray-500 text-sm mb-2">Linha do tempo</p>
+              <OrderTimeline order={selected} currentStatus={status} />
             </div>
 
             {selected.brief_description && (
@@ -325,20 +694,121 @@ export default function CustomOrders() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Clique em &quot;Próximo status&quot; para avançar (recebido → em análise → orçamento…). Depois, Salvar.
+                Enviar mockup avança para &quot;Mockup pronto&quot; (arte exclusiva) ou &quot;Aguardando peça&quot; (arte pronta).
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-500 mb-1">Orçamento (R$)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={quoteAmount}
-                onChange={(e) => setQuoteAmount(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2"
-              />
+            <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-primary" />
+                <p className="text-sm font-medium text-white">Frete — Melhor Envio</p>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">CEP de entrega</label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={shippingCep}
+                    onChange={(e) => setShippingCep(formatCepInput(e.target.value))}
+                    placeholder="00000-000"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    disabled={quoteLoading}
+                    onClick={handleQuoteShipping}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/15 border border-primary/30 text-primary text-sm hover:bg-primary/25 disabled:opacity-50"
+                  >
+                    {quoteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
+                    Cotar frete
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Usa peso/dimensões do insumo ({formatInsumoLabel(selected)} · qtd {selected.quantity}).
+                  {shippingMethod ? ` Selecionado: ${shippingMethod}` : ' Escolha uma opção abaixo ou informe valor manual.'}
+                </p>
+              </div>
+
+              {shippingQuoteOptions.length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {shippingQuoteOptions.map((option) => {
+                    const optionId = String(option.id);
+                    const active = shippingServiceId === optionId;
+                    return (
+                      <button
+                        key={optionId}
+                        type="button"
+                        onClick={() => applyShippingOption(option)}
+                        className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          active
+                            ? 'border-primary bg-primary/10 text-white'
+                            : 'border-white/10 bg-black/20 text-gray-300 hover:border-white/25'
+                        }`}
+                      >
+                        <span className="font-medium">{option.label || `${option.company} / ${option.name}`}</span>
+                        <span className="float-right text-primary">{formatMoney(option.price)}</span>
+                        <span className="block text-xs text-gray-500 mt-0.5">
+                          Prazo: {formatShippingDeadline(option)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Valor do frete (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={shippingAmount}
+                  onChange={(e) => setShippingAmount(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Total peça + frete: {formatMoney(
+                    getOrderDisplayPricing({ ...selected, shipping_amount: shippingAmount || 0 }).productTotal,
+                  )}
+                </p>
+              </div>
             </div>
+
+            {selected.order_type === 'exclusive_art' && (
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-gray-400">Revisões via WhatsApp</p>
+                    <p className="text-lg font-medium">
+                      {Number(selected.revision_count || 0)} / {Number(selected.max_revisions || 3)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={buildAdminWhatsAppUrl(selected)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm hover:bg-emerald-500/20"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
+                    </a>
+                    <button
+                      type="button"
+                      disabled={revisionLoading || Number(selected.revision_count || 0) >= Number(selected.max_revisions || 3)}
+                      onClick={handleIncrementRevision}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/15 bg-white/5 text-sm hover:border-primary/40 disabled:opacity-40"
+                    >
+                      {revisionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Registrar revisão
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm text-gray-500 mb-1">Notas internas</label>
@@ -348,11 +818,6 @@ export default function CustomOrders() {
                 onChange={(e) => setAdminNotes(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 resize-y"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-500 mb-1">Upload mockup</label>
-              <input type="file" accept="image/*" onChange={(e) => setMockupFile(e.target.files?.[0] || null)} />
             </div>
 
             <button

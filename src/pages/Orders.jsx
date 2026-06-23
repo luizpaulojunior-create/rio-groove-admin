@@ -7,7 +7,7 @@ import {
   Settings, ArrowRight, Search, Filter 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { ordersService, isPickupOrder } from '../services/orders';
+import { ordersService, isPickupOrder, getOrderDisplayStatus } from '../services/orders';
 import { shippingService } from '../services/shipping';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
@@ -55,7 +55,8 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [manualTrackingCode, setManualTrackingCode] = useState('');
-  
+  const [mpPaymentId, setMpPaymentId] = useState('');
+  const [reconcileLoading, setReconcileLoading] = useState(false);
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month
@@ -82,10 +83,7 @@ if (
   result = Array.from(orders);
 }
     if (statusFilter !== 'all') {
-      result = result.filter(order => {
-        const normalizedStatus = STATUS_MAP[order.fulfillment_status || order.status] || order.fulfillment_status || order.status;
-        return normalizedStatus === statusFilter;
-      });
+      result = result.filter(order => getOrderDisplayStatus(order) === statusFilter);
     }
 
     if (dateFilter !== 'all') {
@@ -115,6 +113,20 @@ if (
   }, []);
 
   useEffect(() => {
+    const refreshInterval = window.setInterval(() => {
+      fetchOrders(false);
+    }, 45000);
+
+    const handleFocus = () => fetchOrders(false);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
@@ -122,7 +134,7 @@ if (
 
   const getOrderActiveIndex = (order) => {
     if (!order) return 0;
-    let normStatus = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
+    let normStatus = getOrderDisplayStatus(order);
     if (normStatus === 'estoque_reservado') {
       normStatus = 'aguardando_producao';
     }
@@ -170,10 +182,11 @@ if (
   const handleViewOrder = async (order) => {
     setSelectedOrder(order);
     setManualTrackingCode(order.trackingCode || order.tracking_code || '');
+    setMpPaymentId('');
     setIsModalOpen(true);
 
     // Tracking automático ao abrir pedido (referência = id do pedido, não código de rastreio)
-    const norm = getNormalizedStatus(order.fulfillment_status || order.timelineStep || order.status);
+    const norm = getOrderDisplayStatus(order);
 
     if (order.id && !['entregue', 'cancelado'].includes(norm)) {
       try {
@@ -330,6 +343,34 @@ if (
     toast.success('Copiado para a área de transferência!');
   };
 
+  const handleReconcilePayment = async () => {
+    if (!selectedOrder || !mpPaymentId.trim()) {
+      toast.warn('Cole o ID do pagamento do Mercado Pago.');
+      return;
+    }
+    const reference =
+      selectedOrder.external_reference ||
+      selectedOrder.externalReference ||
+      selectedOrder.id;
+    setReconcileLoading(true);
+    try {
+      const result = await ordersService.reconcilePayment(reference, mpPaymentId.trim());
+      if (result.reconciled) {
+        toast.success(result.alreadyPaid ? 'Pagamento já estava sincronizado.' : 'Pagamento sincronizado com o Mercado Pago.');
+        const refreshed = await refreshSelectedOrder(selectedOrder.id);
+        if (refreshed) setSelectedOrder(refreshed);
+        await fetchOrders(false);
+      } else {
+        toast.warn(result.reason || 'Pagamento ainda não aprovado no Mercado Pago.');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || error.message || 'Erro ao sincronizar pagamento.');
+    } finally {
+      setReconcileLoading(false);
+    }
+  };
+
   const getNextActions = () => {
     if (!selectedOrder) return [];
     
@@ -431,7 +472,7 @@ if (
       header: 'Status',
       accessor: 'status',
       render: (row) => {
-        const rawStatus = getNormalizedStatus(row.status || row.payment_status || row.paymentStatus || '');
+        const rawStatus = getOrderDisplayStatus(row);
         
         let type = 'PENDENTE';
         let label = 'PENDENTE';
@@ -561,7 +602,7 @@ if (
                 
                 <div className="relative flex justify-between items-start px-2 overflow-x-auto pb-6 custom-scrollbar">
                   {(() => {
-                    const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
+                    const normStatus = getOrderDisplayStatus(selectedOrder);
                     const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                     const activeIdx = getOrderActiveIndex(selectedOrder);
 
@@ -638,8 +679,8 @@ if (
                           </div>
                           <div>
                             <span className="block font-sans text-[10px] uppercase text-white/50 mb-0.5 tracking-wider">Estoque Base</span>
-                            <span className={`font-sans text-[14px] ${(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status))) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
-                              {(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status))) ? 'Baixado' : 'Pendente'}
+                            <span className={`font-sans text-[14px] ${(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getOrderDisplayStatus(selectedOrder))) ? "text-[#22C55E]" : "text-[#EAB308]"}`}>
+                              {(selectedOrder.stock_deducted_at || STOCK_DEDUCTED_STATUSES.includes(getOrderDisplayStatus(selectedOrder))) ? 'Baixado' : 'Pendente'}
                             </span>
                           </div>
                         </div>
@@ -665,14 +706,14 @@ if (
                       </h2>
                       <p className="font-sans text-[14px] text-white/70 leading-relaxed">
                         {isPaid
-                          ? 'Pagamento confirmado. Combine data, horário e local da retirada com o cliente pelo WhatsApp.'
-                          : 'Pedido com retirada presencial. Após confirmação do pagamento, alinhe a retirada diretamente com o cliente.'}
+                          ? 'Pagamento confirmado. Retirada na Taquara ou por apps de entrega (Uber, 99 etc.) — combine com o cliente pelo WhatsApp.'
+                          : 'Pedido com retirada no Rio. Após confirmação do pagamento, alinhe Taquara ou entrega por aplicativo com o cliente.'}
                       </p>
                     </div>
                   );
                 }
 
-                const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
+                const normStatus = getOrderDisplayStatus(selectedOrder);
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
@@ -734,7 +775,7 @@ if (
               
               {/* 1. AÇÕES OPERACIONAIS */}
               {(() => {
-                const normStatus = getNormalizedStatus(selectedOrder.fulfillment_status || selectedOrder.timelineStep || selectedOrder.status);
+                const normStatus = getOrderDisplayStatus(selectedOrder);
                 const isCancelled = normStatus === 'cancelado' || normStatus === 'cancelled';
                 const activeIdx = getOrderActiveIndex(selectedOrder);
                 
@@ -747,6 +788,29 @@ if (
                         <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-[#FF4D00] mb-6">Ações Operacionais</h2>
                         <div className="space-y-4">
                           {actions}
+                          {TIMELINE_STEPS[getOrderActiveIndex(selectedOrder)]?.id === 'aguardando_pagamento' && (
+                            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
+                              <p className="text-sm font-medium text-emerald-400">Sincronizar Mercado Pago</p>
+                              <p className="text-xs text-white/50">
+                                Valor já caiu no MP? Cole o <strong className="text-white/70">ID do pagamento</strong> da transação para atualizar estoque, e-mail e frete automaticamente.
+                              </p>
+                              <input
+                                type="text"
+                                value={mpPaymentId}
+                                onChange={(e) => setMpPaymentId(e.target.value)}
+                                placeholder="ID do pagamento MP"
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm"
+                              />
+                              <button
+                                type="button"
+                                disabled={reconcileLoading || isProcessing}
+                                onClick={handleReconcilePayment}
+                                className="w-full h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/25 disabled:opacity-50"
+                              >
+                                {reconcileLoading ? 'Sincronizando…' : 'Sincronizar pagamento MP'}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
