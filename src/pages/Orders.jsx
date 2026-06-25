@@ -307,10 +307,10 @@ if (
   const handleCancelOrder = () => {
     if (isProcessing) return;
     if (isOrderPaid(selectedOrder)) {
-      toast.error('Pedido com pagamento confirmado não pode ser cancelado pelo painel.');
+      toast.error('Pedido com pagamento confirmado não pode ser cancelado. Estorne no Mercado Pago primeiro.');
       return;
     }
-    if (!window.confirm('Deseja realmente cancelar este pedido?')) {
+    if (!window.confirm('Deseja realmente cancelar este pedido? O estoque reservado será devolvido.')) {
       return;
     }
     updateOrderStatus(selectedOrder.id, 'cancelado');
@@ -432,7 +432,10 @@ if (
     const actions = [];
     
     if (stepId === 'aguardando_pagamento') {
-      actions.push(<button key="ap" onClick={() => handleUpdateStatus('pagamento_aprovado')} disabled={isProcessing} className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]"><CheckCircle2 size={18} />Aprovar Pagamento</button>);
+      actions.push(
+        <button key="ap" onClick={() => handleUpdateStatus('pagamento_aprovado')} disabled={isProcessing} className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]"><CheckCircle2 size={18} />Aprovar Pagamento</button>,
+        <button key="cancel" type="button" onClick={handleCancelOrder} disabled={isProcessing || isOrderPaid(selectedOrder)} className="w-full h-12 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl text-[14px] font-medium hover:bg-red-500/20 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"><XCircle size={18} />Cancelar Pedido</button>,
+      );
     }
     
     if (stepId === 'pagamento_aprovado') {
