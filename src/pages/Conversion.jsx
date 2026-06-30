@@ -100,8 +100,13 @@ export default function Conversion() {
                   <strong className="text-white">Google Analytics Data API</strong>.
                 </li>
                 <li>
-                  GA4: Admin → Gerenciamento de acesso à propriedade → adicionar o e-mail da conta como{' '}
-                  <strong className="text-white">Viewer</strong>.
+                  GA4: Admin → Gerenciamento de acesso à propriedade → adicionar{' '}
+                  {report.serviceAccountEmail ? (
+                    <code className="text-amber-200 break-all">{report.serviceAccountEmail}</code>
+                  ) : (
+                    'o e-mail da conta de serviço'
+                  )}{' '}
+                  como <strong className="text-white">Viewer</strong>.
                 </li>
                 <li>
                   Render: <code className="text-amber-200">GA4_PROPERTY_ID=539502234</code> e colar o JSON em{' '}
