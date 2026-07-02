@@ -205,21 +205,21 @@ export default function Stock() {
     }
   };
 
-  const handleSyncYellow = async () => {
+  const handleRemoveYellow = async () => {
     if (isProcessing) return;
-    if (!window.confirm('Criar/atualizar todos os SKUs amarelos (Camisa, Regata, Boné) com 10 unidades cada?')) {
+    if (!window.confirm('Remover todos os SKUs amarelos do estoque? Esta ação não pode ser desfeita.')) {
       return;
     }
     try {
       setIsProcessing(true);
-      const loadingToast = toast.loading('Sincronizando estoque amarelo...');
-      const response = await stockService.syncYellowStockItems(10);
+      const loadingToast = toast.loading('Removendo estoque amarelo...');
+      const response = await stockService.removeYellowStockItems();
       toast.update(loadingToast, { render: response.message, type: 'success', isLoading: false, autoClose: 6000 });
       fetchStock(false);
     } catch (error) {
-      console.error('Erro ao sincronizar amarelo:', error);
+      console.error('Erro ao remover amarelo:', error);
       toast.dismiss();
-      toast.error(error?.response?.data?.error || error.message || 'Erro ao sincronizar estoque amarelo.');
+      toast.error(error?.response?.data?.error || error.message || 'Erro ao remover estoque amarelo.');
     } finally {
       setIsProcessing(false);
     }
@@ -419,12 +419,12 @@ export default function Stock() {
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
             <button
-              onClick={handleSyncYellow}
+              onClick={handleRemoveYellow}
               disabled={isProcessing}
               className="flex-1 md:flex-none px-3 h-8 bg-[#111] border border-yellow-500/30 rounded text-xs font-medium text-yellow-400 hover:text-yellow-300 hover:bg-[#1a1a1a] flex items-center justify-center gap-1.5 transition-colors"
             >
               <Package size={14} />
-              <span>Amarelo 10 un.</span>
+              <span>Remover Amarelo</span>
             </button>
             <button
               onClick={handleSeed}

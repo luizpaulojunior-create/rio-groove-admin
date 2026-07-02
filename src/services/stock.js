@@ -147,5 +147,9 @@ export const stockService = {
   async syncYellowStockItems(quantity = 10) {
     const { data } = await api.post('/stock/sync-yellow', { quantity: Number(quantity) || 10 });
     return data;
+  },
+  async removeYellowStockItems() {
+    const { data } = await api.post('/stock/remove-yellow');
+    return data;
   }
 };
