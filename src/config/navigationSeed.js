@@ -9,6 +9,9 @@ const catalogUrl = (genero, segmento) => {
 
 const categoryUrl = (categoria) => `/products?categoria=${categoria}`;
 
+const DEFAULT_EDITORIAL_IMAGE =
+  'https://images.unsplash.com/photo-1550246140-5119ae4790b8?q=80&w=800&auto=format&fit=crop';
+
 export const NAVIGATION_SEED_ITEMS = [
   {
     id: '1',
@@ -27,7 +30,7 @@ export const NAVIGATION_SEED_ITEMS = [
     editorialText: '',
     editorialCtaText: '',
     editorialCtaLink: '/collections',
-    editorialImage: '',
+    editorialImage: DEFAULT_EDITORIAL_IMAGE,
   },
   {
     id: '2',
@@ -43,7 +46,7 @@ export const NAVIGATION_SEED_ITEMS = [
     editorialText: '',
     editorialCtaText: '',
     editorialCtaLink: catalogUrl('masculino'),
-    editorialImage: '',
+    editorialImage: DEFAULT_EDITORIAL_IMAGE,
   },
   {
     id: '3',
@@ -57,7 +60,7 @@ export const NAVIGATION_SEED_ITEMS = [
     editorialText: '',
     editorialCtaText: '',
     editorialCtaLink: catalogUrl('feminino'),
-    editorialImage: '',
+    editorialImage: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=800&auto=format&fit=crop',
   },
   {
     id: '4',
@@ -74,7 +77,7 @@ export const NAVIGATION_SEED_ITEMS = [
     editorialText: '',
     editorialCtaText: '',
     editorialCtaLink: categoryUrl('acessorios'),
-    editorialImage: '',
+    editorialImage: 'https://images.unsplash.com/photo-1521369909029-2afed882baee?q=80&w=800&auto=format&fit=crop',
   },
   {
     id: '5',
@@ -90,7 +93,7 @@ export const NAVIGATION_SEED_ITEMS = [
     editorialText: '',
     editorialCtaText: '',
     editorialCtaLink: '/movimentos',
-    editorialImage: '',
+    editorialImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
   },
   {
     id: '6',
