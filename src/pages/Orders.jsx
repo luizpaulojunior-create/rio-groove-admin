@@ -63,6 +63,7 @@ export default function Orders() {
   const [listSearch, setListSearch] = useState('');
   const [directLookup, setDirectLookup] = useState('');
   const [directLookupLoading, setDirectLookupLoading] = useState(false);
+  const [carrierEventHint, setCarrierEventHint] = useState('');
 
   const mergeOrders = (baseOrders, extraOrders = []) => {
     const merged = Array.isArray(baseOrders) ? [...baseOrders] : [];
@@ -230,6 +231,7 @@ if (
   const handleViewOrder = async (order) => {
     setSelectedOrder(order);
     setManualTrackingCode(order.trackingCode || order.tracking_code || '');
+    setCarrierEventHint('');
     setMpPaymentId('');
     setIsModalOpen(true);
     await syncOrderTracking(order);
@@ -244,9 +246,16 @@ if (
       const tracking = await shippingService.trackShipment(order.id);
       const refreshed = await refreshSelectedOrder(order.id);
       const nextStatus = tracking?.fulfillment_status || tracking?.shipping_status;
+      const carrierEvent = tracking?.sync?.carrier_event;
+
+      if (carrierEvent) {
+        setCarrierEventHint(String(carrierEvent));
+      }
 
       if (refreshed && nextStatus && nextStatus !== getOrderDisplayStatus(refreshed)) {
         toast.info(`Rastreamento atualizado: ${TIMELINE_STEPS.find((s) => s.id === nextStatus)?.label || nextStatus}`);
+      } else if (carrierEvent && refreshed) {
+        toast.info(`Transportadora: ${carrierEvent}`);
       }
 
       return refreshed || order;
@@ -831,6 +840,11 @@ if (
                 return (
                   <div className={`bg-[#0D0D0D] border border-[rgba(255,255,255,0.06)] rounded-[24px] p-6 shadow-sm transition-all duration-500 ${isAfterEtiqueta ? 'ring-1 ring-[#22C55E]/30 shadow-[0_0_30px_rgba(34,197,94,0.05)]' : 'opacity-80'}`}>
                     <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-white mb-6">Acompanhamento da Entrega</h2>
+                    {carrierEventHint ? (
+                      <p className="font-sans text-[12px] text-[#22C55E]/80 mb-4 border border-[#22C55E]/20 rounded-xl px-4 py-3 bg-[#22C55E]/5">
+                        Último evento da transportadora: {carrierEventHint}
+                      </p>
+                    ) : null}
                     
                     <div className="space-y-0 pl-2">
                       {TIMELINE_STEPS.slice(7).map((step, relativeIdx, arr) => {
@@ -1000,7 +1014,17 @@ if (
                     </div>
                     <div className="flex gap-2 items-center">
                       {selectedOrder.trackingCode || selectedOrder.tracking_code ? (
-                        <p className="font-sans text-[18px] text-white font-bold tracking-widest">{selectedOrder.trackingCode || selectedOrder.tracking_code}</p>
+                        <div className="flex flex-col gap-2">
+                          <p className="font-sans text-[18px] text-white font-bold tracking-widest">{selectedOrder.trackingCode || selectedOrder.tracking_code}</p>
+                          <a
+                            href={`https://www.melhorrastreio.com.br/rastreio/${encodeURIComponent(selectedOrder.trackingCode || selectedOrder.tracking_code)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-[#FF4D00] hover:underline w-fit"
+                          >
+                            Ver no Melhor Rastreio
+                          </a>
+                        </div>
                       ) : (
                         <div className="flex gap-2 w-full">
                           <input 
