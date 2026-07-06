@@ -521,7 +521,33 @@ if (
     }
 
     if (stepId === 'producao_concluida') {
-      actions.push(<button key="pe" onClick={() => handleUpdateStatus('preparando_envio')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Package size={18} />Preparar Envio</button>);
+      if (isPickupOrder(selectedOrder)) {
+        actions.push(
+          <button
+            key="pickup-ready"
+            onClick={() => handleUpdateStatus('preparando_envio', 'Pedido pronto para retirada no Rio de Janeiro')}
+            disabled={isProcessing}
+            className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"
+          >
+            <Package size={18} />Pronto para Retirada
+          </button>,
+        );
+      } else {
+        actions.push(<button key="pe" onClick={() => handleUpdateStatus('preparando_envio')} disabled={isProcessing} className="w-full h-12 bg-[#FF4D00] text-white rounded-2xl text-[14px] font-medium hover:bg-[#e64500] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,77,0,0.3)]"><Package size={18} />Preparar Envio</button>);
+      }
+    }
+
+    if (stepId === 'preparando_envio' && isPickupOrder(selectedOrder)) {
+      actions.push(
+        <button
+          key="pickup-done"
+          onClick={() => handleUpdateStatus('entregue', 'Retirada ou entrega local concluída no Rio de Janeiro')}
+          disabled={isProcessing}
+          className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+        >
+          <CheckCircle2 size={18} />Concluir Entrega / Retirada
+        </button>,
+      );
     }
 
     if (stepId === 'preparando_envio' && !isPickupOrder(selectedOrder)) {
@@ -560,6 +586,29 @@ if (
     }
 
     return actions;
+  };
+
+  const getPickupActions = () => {
+    if (!selectedOrder || !isPickupOrder(selectedOrder)) return [];
+
+    const normStatus = getOrderDisplayStatus(selectedOrder);
+    if (normStatus === 'cancelado' || normStatus === 'entregue') return [];
+
+    const stepId = TIMELINE_STEPS[getOrderActiveIndex(selectedOrder)]?.id;
+    if (stepId !== 'preparando_envio') return [];
+
+    return [
+      <button
+        key="pickup-complete"
+        type="button"
+        onClick={() => handleUpdateStatus('entregue', 'Retirada ou entrega local concluída no Rio de Janeiro')}
+        disabled={isProcessing}
+        className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+      >
+        <CheckCircle2 size={18} />
+        Concluir Entrega / Retirada
+      </button>,
+    ];
   };
 
   const getDeliveryActions = () => {
@@ -874,6 +923,9 @@ if (
                 if (isPickupOrder(selectedOrder)) {
                   const activeIdx = getOrderActiveIndex(selectedOrder);
                   const isPaid = activeIdx >= 1;
+                  const normStatus = getOrderDisplayStatus(selectedOrder);
+                  const isDelivered = normStatus === 'entregue';
+                  const isReadyForPickup = normStatus === 'preparando_envio';
 
                   return (
                     <div className="bg-[#0D0D0D] border border-[#FF4D00]/20 rounded-[24px] p-6 shadow-sm">
@@ -881,9 +933,13 @@ if (
                         Retirada no Rio de Janeiro
                       </h2>
                       <p className="font-sans text-[14px] text-white/70 leading-relaxed">
-                        {isPaid
-                          ? 'Pagamento confirmado. Retirada na Taquara ou por apps de entrega (Uber, 99 etc.) — combine com o cliente pelo WhatsApp.'
-                          : 'Pedido com retirada no Rio. Após confirmação do pagamento, alinhe Taquara ou entrega por aplicativo com o cliente.'}
+                        {isDelivered
+                          ? 'Pedido entregue ou retirado com sucesso.'
+                          : isReadyForPickup
+                            ? 'Pedido pronto. Combine retirada na Taquara ou entrega por app (Uber, 99 etc.) e conclua no painel ao finalizar.'
+                            : isPaid
+                              ? 'Pagamento confirmado. Produza o pedido e marque como pronto para retirada quando estiver disponível.'
+                              : 'Pedido com retirada no Rio. Após confirmação do pagamento, alinhe Taquara ou entrega por aplicativo com o cliente.'}
                       </p>
                     </div>
                   );
@@ -1041,6 +1097,25 @@ if (
                   );
                 }
                 return null;
+              })()}
+
+              {(() => {
+                const pickupActions = getPickupActions();
+                if (!pickupActions.length) return null;
+
+                return (
+                  <div className="bg-[#0D0D0D] border border-[#FF4D00]/20 rounded-[24px] p-6 shadow-[0_0_20px_rgba(255,77,0,0.05)]">
+                    <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-[#FF4D00] mb-3">
+                      Retirada no Rio
+                    </h2>
+                    <p className="font-sans text-[12px] text-white/50 mb-5 leading-relaxed">
+                      Após o cliente retirar ou receber por app de entrega, conclua o pedido abaixo.
+                    </p>
+                    <div className="space-y-3">
+                      {pickupActions}
+                    </div>
+                  </div>
+                );
               })()}
 
               {(() => {
