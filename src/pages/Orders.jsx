@@ -64,6 +64,25 @@ export default function Orders() {
   const [directLookup, setDirectLookup] = useState('');
   const [directLookupLoading, setDirectLookupLoading] = useState(false);
   const [carrierEventHint, setCarrierEventHint] = useState('');
+  const [trackingSyncHint, setTrackingSyncHint] = useState('');
+
+const DELIVERY_ADVANCE = {
+  postado: {
+    next: 'em_transito',
+    label: 'Marcar Em Trânsito',
+    log: 'Status de entrega atualizado: em trânsito (confirmado no Melhor Rastreio)',
+  },
+  em_transito: {
+    next: 'saiu_para_entrega',
+    label: 'Marcar Saiu para Entrega',
+    log: 'Status de entrega atualizado: saiu para entrega (confirmado no Melhor Rastreio)',
+  },
+  saiu_para_entrega: {
+    next: 'entregue',
+    label: 'Marcar Entregue',
+    log: 'Status de entrega atualizado: entregue (confirmado no Melhor Rastreio)',
+  },
+};
 
   const mergeOrders = (baseOrders, extraOrders = []) => {
     const merged = Array.isArray(baseOrders) ? [...baseOrders] : [];
@@ -232,6 +251,7 @@ if (
     setSelectedOrder(order);
     setManualTrackingCode(order.trackingCode || order.tracking_code || '');
     setCarrierEventHint('');
+    setTrackingSyncHint('');
     setMpPaymentId('');
     setIsModalOpen(true);
     await syncOrderTracking(order);
@@ -246,10 +266,24 @@ if (
       const tracking = await shippingService.trackShipment(order.id);
       const refreshed = await refreshSelectedOrder(order.id);
       const nextStatus = tracking?.fulfillment_status || tracking?.shipping_status;
-      const carrierEvent = tracking?.sync?.carrier_event;
+      const sync = tracking?.sync || {};
+      const carrierEvent = sync.carrier_event;
+      const meStatus = sync.melhor_envio_status;
 
       if (carrierEvent) {
         setCarrierEventHint(String(carrierEvent));
+        setTrackingSyncHint('');
+      } else if (sync.reason || meStatus) {
+        const baseHint = sync.reason
+          ? String(sync.reason)
+          : 'Rastreamento consultado.';
+        if (meStatus === 'posted' || meStatus === 'postado') {
+          setTrackingSyncHint(
+            'Melhor Envio confirma postagem. Em trânsito e saiu para entrega não vêm automaticamente — use os botões abaixo só se quiser refinar antes da entrega. Postado e entregue sincronizam sozinhos via Melhor Envio.',
+          );
+        } else {
+          setTrackingSyncHint(baseHint);
+        }
       }
 
       if (refreshed && nextStatus && nextStatus !== getOrderDisplayStatus(refreshed)) {
@@ -526,6 +560,30 @@ if (
     }
 
     return actions;
+  };
+
+  const getDeliveryActions = () => {
+    if (!selectedOrder || isPickupOrder(selectedOrder)) return [];
+
+    const normStatus = getOrderDisplayStatus(selectedOrder);
+    if (normStatus === 'cancelado' || normStatus === 'entregue') return [];
+
+    const stepId = TIMELINE_STEPS[getOrderActiveIndex(selectedOrder)]?.id;
+    const advance = DELIVERY_ADVANCE[stepId];
+    if (!advance) return [];
+
+    return [
+      <button
+        key={`delivery-${advance.next}`}
+        type="button"
+        onClick={() => handleUpdateStatus(advance.next, advance.log)}
+        disabled={isProcessing}
+        className="w-full h-12 bg-[#22C55E] text-white rounded-2xl text-[14px] font-medium hover:bg-[#1ea951] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+      >
+        <Truck size={18} />
+        {advance.label}
+      </button>,
+    ];
   };
 
   const columns = [
@@ -844,6 +902,10 @@ if (
                       <p className="font-sans text-[12px] text-[#22C55E]/80 mb-4 border border-[#22C55E]/20 rounded-xl px-4 py-3 bg-[#22C55E]/5">
                         Último evento da transportadora: {carrierEventHint}
                       </p>
+                    ) : trackingSyncHint ? (
+                      <p className="font-sans text-[12px] text-[#EAB308]/90 mb-4 border border-[#EAB308]/25 rounded-xl px-4 py-3 bg-[#EAB308]/5">
+                        {trackingSyncHint}
+                      </p>
                     ) : null}
                     
                     <div className="space-y-0 pl-2">
@@ -979,6 +1041,25 @@ if (
                   );
                 }
                 return null;
+              })()}
+
+              {(() => {
+                const deliveryActions = getDeliveryActions();
+                if (!deliveryActions.length) return null;
+
+                return (
+                  <div className="bg-[#0D0D0D] border border-[#22C55E]/20 rounded-[24px] p-6 shadow-[0_0_20px_rgba(34,197,94,0.05)]">
+                    <h2 className="font-heading text-[28px] uppercase tracking-widest font-bold leading-tight text-[#22C55E] mb-3">
+                      Atualizar Entrega
+                    </h2>
+                    <p className="font-sans text-[12px] text-white/50 mb-5 leading-relaxed">
+                      Opcional: refine o status entre postado e entregue. Postado e entregue já sincronizam automaticamente com o Melhor Envio.
+                    </p>
+                    <div className="space-y-3">
+                      {deliveryActions}
+                    </div>
+                  </div>
+                );
               })()}
 
               {/* 2. LOGÍSTICA & ENVIO */}
