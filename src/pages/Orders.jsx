@@ -232,20 +232,27 @@ if (
     setManualTrackingCode(order.trackingCode || order.tracking_code || '');
     setMpPaymentId('');
     setIsModalOpen(true);
+    await syncOrderTracking(order);
+  };
 
-    // Tracking automático ao abrir pedido (referência = id do pedido, não código de rastreio)
+  const syncOrderTracking = async (order) => {
+    if (!order?.id) return null;
     const norm = getOrderDisplayStatus(order);
+    if (['entregue', 'cancelado'].includes(norm)) return order;
 
-    if (order.id && !['entregue', 'cancelado'].includes(norm)) {
-      try {
-        const tracking = await shippingService.trackShipment(order.id);
-        const shippingStatus = tracking?.shipping_status;
-        if (shippingStatus && shippingStatus !== norm) {
-          await updateOrderStatus(order.id, shippingStatus, `Rastreamento atualizado automaticamente: ${shippingStatus}`);
-        }
-      } catch (error) {
-        console.log('Polling de rastreio falhou ou indisponível', error);
+    try {
+      const tracking = await shippingService.trackShipment(order.id);
+      const refreshed = await refreshSelectedOrder(order.id);
+      const nextStatus = tracking?.fulfillment_status || tracking?.shipping_status;
+
+      if (refreshed && nextStatus && nextStatus !== getOrderDisplayStatus(refreshed)) {
+        toast.info(`Rastreamento atualizado: ${TIMELINE_STEPS.find((s) => s.id === nextStatus)?.label || nextStatus}`);
       }
+
+      return refreshed || order;
+    } catch (error) {
+      console.log('Polling de rastreio falhou ou indisponível', error);
+      return order;
     }
   };
 
@@ -336,6 +343,26 @@ if (
     setManualTrackingCode(refreshed.trackingCode || refreshed.tracking_code || '');
     setOrders((prev) => prev.map((order) => (order.id === orderId ? refreshed : order)));
     return refreshed;
+  };
+
+  const handleRefreshTracking = async () => {
+    if (!selectedOrder?.id || isProcessing) return;
+    try {
+      setIsProcessing(true);
+      const toastId = toast.loading('Consultando transportadora...');
+      await syncOrderTracking(selectedOrder);
+      toast.update(toastId, {
+        render: 'Rastreamento consultado.',
+        type: 'success',
+        isLoading: false,
+        autoClose: 2500,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error('Não foi possível atualizar o rastreamento.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownloadLabelPdf = async () => {
@@ -948,16 +975,28 @@ if (
                   <div className="bg-[#050505] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)] flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-3">
                       <span className="block font-sans text-[10px] uppercase text-white/50 tracking-wider">Código de Rastreio</span>
-                      {!isPickupOrder(selectedOrder) && (selectedOrder.trackingCode || selectedOrder.tracking_code || selectedOrder.melhor_envio_shipment_id) && (
-                        <button
-                          type="button"
-                          onClick={handleDownloadLabelPdf}
-                          disabled={isProcessing}
-                          className="inline-flex items-center gap-1.5 text-[11px] text-[#22C55E] hover:text-[#1ea951] disabled:opacity-50"
-                        >
-                          <Download size={12} /> Baixar PDF
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {!isPickupOrder(selectedOrder) && (selectedOrder.trackingCode || selectedOrder.tracking_code || selectedOrder.melhor_envio_shipment_id) && (
+                          <button
+                            type="button"
+                            onClick={handleRefreshTracking}
+                            disabled={isProcessing}
+                            className="inline-flex items-center gap-1.5 text-[11px] text-[#FF4D00] hover:text-[#ff6a2b] disabled:opacity-50"
+                          >
+                            <Loader2 size={12} className={isProcessing ? 'animate-spin' : ''} /> Atualizar rastreio
+                          </button>
+                        )}
+                        {!isPickupOrder(selectedOrder) && (selectedOrder.trackingCode || selectedOrder.tracking_code || selectedOrder.melhor_envio_shipment_id) && (
+                          <button
+                            type="button"
+                            onClick={handleDownloadLabelPdf}
+                            disabled={isProcessing}
+                            className="inline-flex items-center gap-1.5 text-[11px] text-[#22C55E] hover:text-[#1ea951] disabled:opacity-50"
+                          >
+                            <Download size={12} /> Baixar PDF
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 items-center">
                       {selectedOrder.trackingCode || selectedOrder.tracking_code ? (
