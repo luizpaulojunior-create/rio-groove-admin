@@ -343,7 +343,7 @@ if (
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast.dismiss(`update-status-${orderId}`);
-      toast.error('Erro ao atualizar status.');
+      toast.error(error?.response?.data?.message || error?.message || 'Erro ao atualizar status.');
       throw error;
     } finally {
       setIsProcessing(false);
