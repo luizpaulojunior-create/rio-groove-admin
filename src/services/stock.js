@@ -151,5 +151,9 @@ export const stockService = {
   async removeYellowStockItems() {
     const { data } = await api.post('/stock/remove-yellow');
     return data;
-  }
+  },
+  async syncPhysicalStock() {
+    const { data } = await api.post('/stock/sync-physical');
+    return data;
+  },
 };

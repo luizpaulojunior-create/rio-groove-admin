@@ -225,6 +225,31 @@ export default function Stock() {
     }
   };
 
+  const handleSyncPhysical = async () => {
+    if (isProcessing) return;
+    if (!window.confirm(
+      'Sincronizar o estoque físico do caderno?\n\n' +
+      '• Define as quantidades reais (Oversized / Regata Machão / Cropped Oversized)\n' +
+      '• Remove TODOS os SKUs que não estão na lista\n\n' +
+      'Esta ação não pode ser desfeita automaticamente.'
+    )) {
+      return;
+    }
+    try {
+      setIsProcessing(true);
+      const loadingToast = toast.loading('Sincronizando estoque físico...');
+      const response = await stockService.syncPhysicalStock();
+      toast.update(loadingToast, { render: response.message, type: 'success', isLoading: false, autoClose: 8000 });
+      fetchStock(false);
+    } catch (error) {
+      console.error('Erro ao sincronizar estoque físico:', error);
+      toast.dismiss();
+      toast.error(error?.response?.data?.error || error.message || 'Erro ao sincronizar estoque físico.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleAdd = () => {
     setEditingItem(null);
     applyCategoryDefaults(CATEGORIES[0]);
@@ -418,6 +443,14 @@ export default function Stock() {
             <p className="text-xs text-[var(--color-text-muted)] mt-1">Centro operacional de estoque e reposição em tempo real</p>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              onClick={handleSyncPhysical}
+              disabled={isProcessing}
+              className="flex-1 md:flex-none px-3 h-8 bg-[#111] border border-emerald-500/30 rounded text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-[#1a1a1a] flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Package size={14} />
+              <span>Sync Estoque Físico</span>
+            </button>
             <button
               onClick={handleRemoveYellow}
               disabled={isProcessing}
