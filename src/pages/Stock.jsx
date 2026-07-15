@@ -10,7 +10,8 @@ import {
   getAllModelsForFilters, resolveGenderFromModel, normalizeCategory,
   GENDER_NEUTRAL, FABRIC_NEUTRAL, MATERIAL_CANECA
 } from '../config/inventory';
-
+import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_ROLES, hasMinRole } from '../config/adminRoles';
 const getGenderFromModel = (model, storedGender) => resolveGenderFromModel(model, storedGender);
 
 const getFabricFromSKU = (sku) => {
@@ -38,6 +39,8 @@ function useDebounce(value, delay) {
 }
 
 export default function Stock() {
+  const { adminRole } = useAuth();
+  const canRunBulkStockOps = hasMinRole(adminRole, ADMIN_ROLES.SUPERADMIN);
   const [stockItems, setStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -447,6 +450,8 @@ export default function Stock() {
             <p className="text-xs text-[var(--color-text-muted)] mt-1">Centro operacional de estoque e reposição em tempo real</p>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
+            {canRunBulkStockOps && (
+              <>
             <button
               onClick={handleSyncPhysical}
               disabled={isProcessing}
@@ -471,6 +476,8 @@ export default function Stock() {
               <Package size={14} />
               <span>Popular Estoque Base</span>
             </button>
+              </>
+            )}
             <button
               onClick={handleAdd}
               className="flex-1 md:flex-none px-3 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-[0_0_10px_rgba(37,99,235,0.2)]"
