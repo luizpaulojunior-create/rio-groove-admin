@@ -78,24 +78,28 @@ export default function Stock() {
   );
 
   const formSizes = useMemo(
-    () => getSizesForCategory(formCategory),
-    [formCategory]
+    () => getSizesForCategory(formCategory, formModel),
+    [formCategory, formModel]
   );
 
   const applyCategoryDefaults = (newCat) => {
     setFormCategory(newCat);
-    const sizes = getSizesForCategory(newCat);
-    setFormSize(sizes[0] || 'M');
     const colors = getColorsForCategory(newCat);
     setFormColor(colors[0]?.label || COLORS[0].label);
     if (categoryUsesGender(newCat)) {
       const g = formGender || GENDERS[0];
       setFormGender(g);
       const models = getModelsForCategory(newCat, g);
-      setFormModel(models[0] || '');
+      const nextModel = models[0] || '';
+      setFormModel(nextModel);
+      const sizes = getSizesForCategory(newCat, nextModel);
+      setFormSize(sizes[0] || 'M');
     } else {
       const models = getModelsForCategory(newCat, null);
-      setFormModel(models[0] || '');
+      const nextModel = models[0] || '';
+      setFormModel(nextModel);
+      const sizes = getSizesForCategory(newCat, nextModel);
+      setFormSize(sizes[0] || 'M');
     }
     if (!categoryUsesFabric(newCat)) {
       setFormFabric('Lisa');
@@ -927,7 +931,14 @@ export default function Stock() {
                   <select
                     name="model"
                     value={formModel}
-                    onChange={(e) => setFormModel(e.target.value)}
+                    onChange={(e) => {
+                      const nextModel = e.target.value;
+                      setFormModel(nextModel);
+                      const sizes = getSizesForCategory(formCategory, nextModel);
+                      if (!sizes.includes(formSize)) {
+                        setFormSize(sizes[0] || 'M');
+                      }
+                    }}
                     required
                     className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 h-9 text-xs text-white focus:outline-none focus:border-blue-500 transition-all appearance-none"
                   >

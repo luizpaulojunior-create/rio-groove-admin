@@ -53,20 +53,25 @@ export const FABRICS = [
   'Estonada'
 ];
 
-export const APPAREL_SIZES = ['P', 'M', 'G', 'GG'];
+export const APPAREL_SIZES = ['P', 'M', 'G', 'GG', 'XGG'];
 
-/** Oversized Tradicional masculino — G1 é o maior tamanho (após GG). */
-export const MASCULINO_OVERSIZED_SIZES = ['P', 'M', 'G', 'GG', 'G1'];
+/** Cropped Oversized — somente P ao G (sem GG/XGG/G1). */
+export const CROPPED_OVERSIZED_SIZES = ['P', 'M', 'G'];
 
-/** Acréscimo de preço no tamanho G1 (camisas Oversized masculinas). */
-export const MASCULINO_OVERSIZED_G1_SURCHARGE = 15;
+/** Oversized Tradicional / Regata Machão — P ao XGG (G1 no caderno = XGG). */
+export const MASCULINO_OVERSIZED_SIZES = ['P', 'M', 'G', 'GG', 'XGG'];
+
+/** Acréscimo de preço no tamanho XGG (camisas Oversized masculinas). */
+export const MASCULINO_OVERSIZED_XGG_SURCHARGE = 15;
+/** @deprecated use MASCULINO_OVERSIZED_XGG_SURCHARGE */
+export const MASCULINO_OVERSIZED_G1_SURCHARGE = MASCULINO_OVERSIZED_XGG_SURCHARGE;
 
 export const SIZES = [
   'P',
   'M',
   'G',
   'GG',
-  'G1',
+  'XGG',
   'Tamanho Único',
 ];
 
@@ -164,8 +169,9 @@ export function getColorsForCategory(category) {
   return COLORS;
 }
 
-export function getSizesForCategory(category) {
+export function getSizesForCategory(category, model) {
   const cat = normalizeCategory(category);
+  if (model === 'Cropped Oversized') return CROPPED_OVERSIZED_SIZES;
   if (cat === 'Camisa' || cat === 'Regata') return APPAREL_SIZES;
   return ['Tamanho Único'];
 }
