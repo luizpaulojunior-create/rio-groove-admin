@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 
 /** Garante sufixo /api mesmo se VITE_API_URL vier sem ele (ex.: Cloudflare env). */
 export function resolveApiBaseUrl() {
-  const raw = (import.meta.env.VITE_API_URL || 'https://rio-groove-backend.onrender.com/api').trim();
+  const raw = (import.meta.env.VITE_API_URL || 'https://api.riogroovemovimentos.com.br/api').trim();
   const withoutTrailing = raw.replace(/\/+$/, '');
   return withoutTrailing.endsWith('/api') ? withoutTrailing : `${withoutTrailing}/api`;
 }
