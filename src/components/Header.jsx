@@ -14,6 +14,7 @@ export default function Header({ onMenuClick }) {
       case 'orders': return 'Pedidos';
       case 'products': return 'Produtos';
       case 'stock': return 'Estoque';
+      case 'fair-pos': return 'Venda Feira';
       case 'insumo-costs': return 'Custos de Insumos';
       case 'collections': return 'Coleções';
       case 'customers': return 'Clientes';

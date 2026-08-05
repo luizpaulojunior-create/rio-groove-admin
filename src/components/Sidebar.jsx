@@ -23,11 +23,13 @@ import {
   Palette,
   Calculator,
   UserPlus,
-  TrendingUp
+  TrendingUp,
+  Store
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard },
+  { path: '/admin/fair-pos', name: 'Venda Feira', icon: Store },
   { path: '/admin/orders', name: 'Pedidos', icon: ShoppingBag },
   { path: '/admin/custom-orders', name: 'Personalizados', icon: Palette },
   { path: '/admin/products', name: 'Produtos', icon: Package },
