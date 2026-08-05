@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { buildDashboardStats, buildSalesChartData, buildTopProducts, analyticsService } from '../services/analytics';
 import { stockService } from '../services/stock';
 import { ordersService } from '../services/orders';
@@ -68,8 +69,18 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  const lowStockItems = useMemo(() => stockItems.filter(i => Number(i.quantity) > 0 && Number(i.quantity) <= Number(i.min_stock)), [stockItems]);
-  const outOfStockItems = useMemo(() => stockItems.filter(i => Number(i.quantity) === 0), [stockItems]);
+  const lowStockItems = useMemo(
+    () => stockItems
+      .filter(i => i.is_active !== false && Number(i.quantity) > 0 && Number(i.quantity) <= Number(i.min_stock))
+      .sort((a, b) => Number(a.quantity) - Number(b.quantity) || String(a.sku).localeCompare(String(b.sku))),
+    [stockItems],
+  );
+  const outOfStockItems = useMemo(
+    () => stockItems
+      .filter(i => i.is_active !== false && Number(i.quantity) === 0)
+      .sort((a, b) => String(a.sku).localeCompare(String(b.sku))),
+    [stockItems],
+  );
   
   const pendingOrders = useMemo(() => orders.filter(o => o.status === 'aguardando_pagamento' || o.status === 'aguardando_producao' || o.status === 'em_producao' || o.status === 'pending_payment'), [orders]);
   
@@ -269,27 +280,70 @@ export default function Dashboard() {
           </div>
           <div className="space-y-4 flex-1">
             {outOfStockItems.length > 0 && (
-              <div className="flex items-center gap-5 p-5 rounded-[24px] bg-red-500/5 border border-red-500/10">
-                <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                  <AlertCircle className="text-red-500" />
+              <div className="rounded-[24px] bg-red-500/5 border border-red-500/10 overflow-hidden">
+                <div className="flex items-center gap-4 p-5">
+                  <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="text-red-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans text-white font-medium text-lg">{outOfStockItems.length} SKUs Esgotados</p>
+                    <p className="font-sans text-sm text-red-400/80">Necessidade imediata de reposição</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-sans text-white font-medium text-lg">{outOfStockItems.length} Produtos Esgotados</p>
-                  <p className="font-sans text-sm text-red-400/80">Necessidade imediata de reposição</p>
+                <div className="max-h-72 overflow-y-auto border-t border-red-500/10">
+                  {outOfStockItems.map((item) => (
+                    <div key={item.id || item.sku} className="flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5 last:border-b-0">
+                      <div className="min-w-0">
+                        <p className="font-mono text-sm font-semibold text-red-300 truncate">{item.sku || 'SEM-SKU'}</p>
+                        <p className="text-xs text-white/50 truncate">
+                          {[item.category, item.model, item.color_label || item.color_key, item.size].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-lg bg-red-500/10 px-2.5 py-1 font-mono text-xs font-bold text-red-400">
+                        0 un
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
             
             {lowStockItems.length > 0 && (
-              <div className="flex items-center gap-5 p-5 rounded-[24px] bg-yellow-500/5 border border-yellow-500/10">
-                <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="text-yellow-500" />
+              <div className="rounded-[24px] bg-yellow-500/5 border border-yellow-500/10 overflow-hidden">
+                <div className="flex items-center gap-4 p-5">
+                  <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="text-yellow-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans text-white font-medium text-lg">{lowStockItems.length} SKUs em Estoque Crítico</p>
+                    <p className="font-sans text-sm text-yellow-400/80">Quantidade igual ou abaixo do estoque mínimo</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-sans text-white font-medium text-lg">{lowStockItems.length} Variantes em Estoque Crítico</p>
-                  <p className="font-sans text-sm text-yellow-400/80">Risco iminente de ruptura de estoque</p>
+                <div className="max-h-72 overflow-y-auto border-t border-yellow-500/10">
+                  {lowStockItems.map((item) => (
+                    <div key={item.id || item.sku} className="flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5 last:border-b-0">
+                      <div className="min-w-0">
+                        <p className="font-mono text-sm font-semibold text-yellow-200 truncate">{item.sku || 'SEM-SKU'}</p>
+                        <p className="text-xs text-white/50 truncate">
+                          {[item.category, item.model, item.color_label || item.color_key, item.size].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-lg bg-yellow-500/10 px-2.5 py-1 font-mono text-xs font-bold text-yellow-300">
+                        {Number(item.quantity)} / mín {Number(item.min_stock)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {(outOfStockItems.length > 0 || lowStockItems.length > 0) && (
+              <Link
+                to="/admin/stock"
+                className="flex min-h-12 items-center justify-center rounded-2xl border border-white/10 text-sm font-medium uppercase tracking-wider text-white/70 transition-colors hover:border-[#FF4D00]/40 hover:text-white"
+              >
+                Abrir estoque completo
+              </Link>
             )}
             
             {pendingOrders.length > 0 && (
