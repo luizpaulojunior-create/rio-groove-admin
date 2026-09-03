@@ -18,9 +18,12 @@ export function getBackendRootUrl() {
   return resolveApiBaseUrl().replace(/\/api$/, '');
 }
 
+const DEFAULT_TIMEOUT_MS = 25000;
+const UPLOAD_TIMEOUT_MS = 120000;
+
 const api = axios.create({
   baseURL: resolveApiBaseUrl(),
-  timeout: 25000,
+  timeout: DEFAULT_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,6 +47,9 @@ api.interceptors.request.use(
       } else {
         delete config.headers['Content-Type'];
         delete config.headers['content-type'];
+      }
+      if (config.timeout == null || config.timeout <= DEFAULT_TIMEOUT_MS) {
+        config.timeout = UPLOAD_TIMEOUT_MS;
       }
     }
     

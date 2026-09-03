@@ -26,7 +26,7 @@ export default function UploadArea({ images = [], onChange, maxImages = null }) 
       filesToProcess = filesToProcess.slice(0, maxImages - images.length);
     }
 
-    const newImages = filesToProcess.map(file => {
+    const newImages = filesToProcess.map((file, index) => {
       // Auto-detect color from filename (e.g. ze-pilintra-red-01.png)
       let autoColor = '';
       const nameParts = file.name.split('-');
@@ -44,10 +44,10 @@ export default function UploadArea({ images = [], onChange, maxImages = null }) 
         file,
         preview: URL.createObjectURL(file),
         id: Math.random().toString(36).substr(2, 9),
-        isMain: images.length === 0, // first image becomes main automatically
+        isMain: images.length === 0 && index === 0,
         color_key: autoColor,
         color_variant: colorMeta?.label || '',
-        position: images.length
+        position: images.length + index
       };
     });
 

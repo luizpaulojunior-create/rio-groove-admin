@@ -15,6 +15,20 @@ function colorKeyToVariantLabel(colorKey) {
   return match?.label || '';
 }
 
+function productSaveErrorMessage(err, fallback) {
+  const raw = String(
+    err?.response?.data?.error ||
+      err?.response?.data?.message ||
+      err?.message ||
+      err?.cause?.message ||
+      '',
+  );
+  if (err?.code === 'ECONNABORTED' || err?.cause?.code === 'ECONNABORTED' || /timeout/i.test(raw)) {
+    return 'O upload das imagens demorou demais. Recarregue a lista antes de tentar de novo — o produto pode já ter sido salvo.';
+  }
+  return raw || fallback;
+}
+
 function appendImagesToFormData(formData, images) {
   const newImageMeta = [];
 
@@ -103,10 +117,10 @@ export const productsService = {
     appendImagesToFormData(formData, images);
 
     try {
-      const { data } = await api.post('/products', formData);
+      const { data } = await api.post('/products', formData, { timeout: 120000 });
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao criar produto', { cause: err });
+      throw new Error(productSaveErrorMessage(err, 'Falha ao criar produto'), { cause: err });
     }
   },
 
@@ -150,10 +164,10 @@ export const productsService = {
     }
 
     try {
-      const { data } = await api.put(`/products/${id}`, formData);
+      const { data } = await api.put(`/products/${id}`, formData, { timeout: 120000 });
       return data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Falha ao atualizar produto', { cause: err });
+      throw new Error(productSaveErrorMessage(err, 'Falha ao atualizar produto'), { cause: err });
     }
   },
 
