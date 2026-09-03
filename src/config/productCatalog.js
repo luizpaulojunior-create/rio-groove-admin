@@ -53,7 +53,7 @@ export function resolveStockInsumo(formCategory) {
 
 /** Temas editoriais (campo products.category) — espelha productCategories.js */
 export const COLLECTION_THEME_NAMES = [
-  'Samba & Cultura Brasileira',
+  'Ícones do Samba',
   'Malandragem & Rua',
   'Rainhas & Poder Feminino',
   'Ancestralidade Brasileira',

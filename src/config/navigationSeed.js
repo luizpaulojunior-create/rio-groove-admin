@@ -21,7 +21,7 @@ export const NAVIGATION_SEED_ITEMS = [
     subItems: [
       { id: '1-0', label: 'Copa Rio Groove', link: '/collections/copa-do-mundo-rio-groove' },
       { id: '1-1', label: 'Malandragem & Rua', link: '/collections/malandragem' },
-      { id: '1-2', label: 'Samba & Cultura Brasileira', link: '/collections/samba' },
+      { id: '1-2', label: 'Ícones do Samba', link: '/collections/samba' },
       { id: '1-3', label: 'Rainhas & Poder Feminino', link: '/collections/rainhas' },
       { id: '1-4', label: 'Ancestralidade Brasileira', link: '/collections/ancestralidade' },
       { id: '1-5', label: 'Luz & Proteção', link: '/collections/Luz' },
