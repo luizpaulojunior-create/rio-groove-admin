@@ -126,7 +126,10 @@ export const AuthProvider = ({
       data: authListener,
     } =
       supabase.auth.onAuthStateChange(
-        (_event, session) => {
+        (event, session) => {
+          // getSession já cobre a abertura. TOKEN_REFRESHED não pode
+          // recolocar o painel no spinner no meio do uso.
+          if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
           setLoading(true);
           checkAdmin(session?.user || null);
         }

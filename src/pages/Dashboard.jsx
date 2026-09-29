@@ -21,15 +21,45 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ordersReady, setOrdersReady] = useState(false);
+
+  const emptyChart = [
+    { date: 'Seg', revenue: 0 },
+    { date: 'Ter', revenue: 0 },
+    { date: 'Qua', revenue: 0 },
+    { date: 'Qui', revenue: 0 },
+    { date: 'Sex', revenue: 0 },
+    { date: 'Sáb', revenue: 0 },
+    { date: 'Dom', revenue: 0 },
+  ];
 
   const fetchData = async () => {
+    const statsPromise = fetchWithTimeout(analyticsService.getDashboardStats(), null);
+    const stockPromise = fetchWithTimeout(stockService.getStock(), []);
+    const ordersPromise = fetchWithTimeout(ordersService.getOrders(), []);
+    const chartPromise = fetchWithTimeout(analyticsService.getSalesChartData('30d'), []);
+    const topPromise = fetchWithTimeout(analyticsService.getTopProducts(), []);
+
+    let statsData = null;
+    let stockData = [];
+
     try {
-      const [statsData, stockData, ordersData, chartResp, topProdResp] = await Promise.all([
-        fetchWithTimeout(analyticsService.getDashboardStats(), null),
-        fetchWithTimeout(stockService.getStock(), []),
-        fetchWithTimeout(ordersService.getOrders(), []),
-        fetchWithTimeout(analyticsService.getSalesChartData('30d'), []),
-        fetchWithTimeout(analyticsService.getTopProducts(), []),
+      [statsData, stockData] = await Promise.all([statsPromise, stockPromise]);
+      stockData = stockData || [];
+      setStockItems(stockData);
+      if (statsData?.available) {
+        setStats(statsData);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar KPIs do dashboard:', error);
+    }
+
+    try {
+      const [ordersData, chartResp, topProdResp] = await Promise.all([
+        ordersPromise,
+        chartPromise,
+        topPromise,
       ]);
 
       const validOrders = Array.isArray(ordersData) ? ordersData : [];
@@ -37,7 +67,7 @@ export default function Dashboard() {
 
       const resolvedStats = statsData?.available
         ? statsData
-        : buildDashboardStats(validOrders, stockData || []);
+        : buildDashboardStats(validOrders, stockData);
       const resolvedChart = Array.isArray(chartResp) && chartResp.length > 0
         ? chartResp
         : buildSalesChartData(validOrders, '30d');
@@ -46,21 +76,15 @@ export default function Dashboard() {
         : buildTopProducts(validOrders);
 
       setStats(resolvedStats || {});
-      setStockItems(stockData || []);
       setOrders(validOrders);
-      setChartData(resolvedChart.length > 0 ? resolvedChart : [
-        { date: 'Seg', revenue: 0 },
-        { date: 'Ter', revenue: 0 },
-        { date: 'Qua', revenue: 0 },
-        { date: 'Qui', revenue: 0 },
-        { date: 'Sex', revenue: 0 },
-        { date: 'Sáb', revenue: 0 },
-        { date: 'Dom', revenue: 0 }
-      ]);
+      setChartData(resolvedChart.length > 0 ? resolvedChart : emptyChart);
       setTopProducts(resolvedTop);
     } catch (error) {
-      console.error('Erro ao buscar dados do dashboard:', error);
+      console.error('Erro ao buscar pedidos do dashboard:', error);
+      setStats((current) => current || {});
+      setChartData(emptyChart);
     } finally {
+      setOrdersReady(true);
       setLoading(false);
     }
   };
@@ -222,6 +246,7 @@ export default function Dashboard() {
       </div>
 
       {/* Customer KPIs */}
+      {ordersReady ? (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {customerKpis.map((kpi, i) => (
           <motion.div
@@ -238,6 +263,13 @@ export default function Dashboard() {
           </motion.div>
         ))}
       </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 rounded-[24px] bg-[#050505] border border-white/5 animate-pulse" />
+          ))}
+        </div>
+      )}
 
       {/* Storefront KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -346,7 +378,7 @@ export default function Dashboard() {
               </Link>
             )}
             
-            {pendingOrders.length > 0 && (
+            {ordersReady && pendingOrders.length > 0 && (
               <div className="flex items-center gap-5 p-5 rounded-[24px] bg-blue-500/5 border border-blue-500/10">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                   <Clock className="text-blue-500" />
@@ -358,7 +390,11 @@ export default function Dashboard() {
               </div>
             )}
             
-            {outOfStockItems.length === 0 && lowStockItems.length === 0 && pendingOrders.length === 0 && (
+            {!ordersReady && (
+              <div className="h-24 rounded-[24px] bg-white/5 animate-pulse" />
+            )}
+
+            {ordersReady && outOfStockItems.length === 0 && lowStockItems.length === 0 && pendingOrders.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-white/30 py-12">
                 <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
                   <Activity size={24} />
@@ -384,7 +420,7 @@ export default function Dashboard() {
             <button className="text-sm font-sans text-white/50 hover:text-white transition-colors uppercase tracking-wider font-medium">Ver Todas</button>
           </div>
           <div className="space-y-3 flex-1">
-            {recentSales.map((order, i) => (
+            {ordersReady && recentSales.map((order, i) => (
               <div key={order.id || i} className="flex items-center justify-between p-4 rounded-[20px] bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-transparent hover:border-white/5 group">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center font-heading text-xl text-white">
@@ -410,7 +446,11 @@ export default function Dashboard() {
               </div>
             ))}
             
-            {recentSales.length === 0 && (
+            {!ordersReady && (
+              <div className="h-24 rounded-[20px] bg-white/5 animate-pulse" />
+            )}
+
+            {ordersReady && recentSales.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-white/30 py-12">
                 <Zap size={32} className="mb-4 opacity-50" />
                 <p className="font-sans">Nenhuma venda recente.</p>
@@ -524,6 +564,8 @@ export default function Dashboard() {
                   )}
                 </div>
               ))
+            ) : !ordersReady ? (
+              <div className="h-24 rounded-[20px] bg-white/5 animate-pulse" />
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-white/30 py-12">
                 <Package size={32} className="mb-4 opacity-50" />

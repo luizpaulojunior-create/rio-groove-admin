@@ -2,10 +2,10 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
-import Orders from '../pages/Orders';
-import CustomOrders from '../pages/CustomOrders';
 
 const Login = lazy(() => import('../pages/Login'));
+const Orders = lazy(() => import('../pages/Orders'));
+const CustomOrders = lazy(() => import('../pages/CustomOrders'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Products = lazy(() => import('../pages/Products'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
