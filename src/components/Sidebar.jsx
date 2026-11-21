@@ -24,13 +24,15 @@ import {
   Calculator,
   UserPlus,
   TrendingUp,
-  Store
+  Store,
+  Receipt
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/fair-pos', name: 'Venda Feira', icon: Store },
   { path: '/admin/orders', name: 'Pedidos', icon: ShoppingBag },
+  { path: '/admin/charges', name: 'Cobrança', icon: Receipt },
   { path: '/admin/custom-orders', name: 'Personalizados', icon: Palette },
   { path: '/admin/products', name: 'Produtos', icon: Package },
   { path: '/admin/stock', name: 'Estoque', icon: Boxes },

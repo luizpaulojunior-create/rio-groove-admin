@@ -11,6 +11,7 @@ const Products = lazy(() => import('../pages/Products'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
 const Stock = lazy(() => import('../pages/Stock'));
 const FairPos = lazy(() => import('../pages/FairPos'));
+const ManualCharges = lazy(() => import('../pages/ManualCharges'));
 const InsumoCosts = lazy(() => import('../pages/InsumoCosts'));
 const Collections = lazy(() => import('../pages/Collections'));
 const Stats = lazy(() => import('../pages/Stats'));
@@ -47,6 +48,7 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
         <Route path="orders" element={<Orders />} />
+        <Route path="charges" element={<ManualCharges />} />
         <Route path="custom-orders" element={<CustomOrders />} />
         <Route path="products" element={<Products />} />
         <Route path="products/:id" element={<ProductDetail />} />

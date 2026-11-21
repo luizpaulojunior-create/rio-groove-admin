@@ -25,6 +25,7 @@ export const ROUTE_MIN_ROLES = {
   '/admin/insumo-costs': ADMIN_ROLES.EDITOR,
   '/admin/products': ADMIN_ROLES.EDITOR,
   '/admin/orders': ADMIN_ROLES.EDITOR,
+  '/admin/charges': ADMIN_ROLES.EDITOR,
   '/admin/custom-orders': ADMIN_ROLES.EDITOR,
   '/admin/campaigns': ADMIN_ROLES.EDITOR,
   '/admin/coupons': ADMIN_ROLES.EDITOR,
